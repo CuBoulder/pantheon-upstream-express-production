@@ -1,0 +1,552 @@
+<?php
+/**
+ * @file
+ * Code for the Class Notes feature.
+ */
+
+include_once 'cu_class_notes.features.inc';
+
+/**
+ * Implements hook_page_alter().
+ * Add css.
+ */
+function cu_class_notes_page_alter(&$page) {
+  drupal_add_css(drupal_get_path('module', 'cu_class_notes') . '/css/cu-class-notes.css');
+}
+
+/**
+ * Implements hook_menu().
+ */
+function cu_class_notes_menu() {
+  $items = array();
+  // Class notes ordered ascending by class year
+  $items['classnotes'] = array(
+    'access callback' => TRUE,
+    'title' => 'Class Notes',
+    'page callback' => 'cu_class_notes_archive',
+  );
+  // Class notes ordered descending by created date
+  $items['classnotes/recent'] = array(
+    'access callback' => TRUE,
+    'title' => 'Recent Class Notes',
+    'page callback' => 'cu_class_notes_archive_recent',
+  );
+  // Class notes filtered by created date
+  // classnotes/added/YYYY-MM-DD/YYYY-MM-DD
+  $items['classnotes/added/%/%'] = array(
+    'access callback' => TRUE,
+    'title' => 'Class Notes',
+    'page callback' => 'cu_class_notes_archive_added',
+    'page arguments' => array(2,3),
+  );
+  // Class notes filtered by created date range and class year
+  // classnotes/added/YYYY-MM-DD/YYYY-MM-DD/year/YYYY
+  $items['classnotes/added/%/%/year/%'] = array(
+    'access callback' => TRUE,
+    'title' => 'Class Notes',
+    'page callback' => 'cu_class_notes_archive_added_year',
+    'page arguments' => array(2,3,5),
+    'title callback' => 'cu_class_notes_archive_year_title',
+    'title arguments' => array(5),
+  );
+  // Class notes filteed by created date range and class year range
+  // classnotes/added/YYYY-MM-DD/YYYY-MM-DD/year/YYYY/YYYY
+  $items['classnotes/added/%/%/year/%/%'] = array(
+    'access callback' => TRUE,
+    'title' => 'Class Notes',
+    'page callback' => 'cu_class_notes_archive_added_year',
+    'page arguments' => array(2,3,5,6),
+    'title callback' => 'cu_class_notes_archive_year_title',
+    'title arguments' => array(5,6),
+  );
+  // Class notes filtered by year
+  // classnotes/year/YYYY
+  $items['classnotes/year/%'] = array(
+    'access callback' => TRUE,
+    'title' => 'Class Notes',
+    'page callback' => 'cu_class_notes_archive_year',
+    'page arguments' => array(2),
+    'title callback' => 'cu_class_notes_archive_year_title',
+    'title arguments' => array(2),
+  );
+  // Class notes filtered by class year range
+  // classnotes/years/YYYY/YYYY
+  $items['classnotes/years'] = array(
+    'access callback' => TRUE,
+    'title' => 'Class Notes',
+    'page callback' => 'cu_class_notes_archive_year',
+    'title callback' => 'cu_class_notes_archive_year_title',
+  );
+  return $items;
+}
+
+/**
+ * Title callback function.
+ */
+function cu_class_notes_archive_year_title($arg2 = NULL, $arg3 = NULL) {
+  if (arg(0) == 'classnotes') {
+    $year1 =(int) $arg2;
+    $year2 =(int) $arg3;
+
+    // Make sure values are numeric
+    if ($year1) {
+      $parts = array();
+      $prefix = 'Notes from the Class of ';
+      $parts[] = $year1;
+      if ($year2) {
+        $prefix = 'Notes from the Classes of ';
+        $parts[] = '-';
+        $parts[] = $year2;
+      }
+      $title = $prefix . join('', $parts);
+    } else {
+      $title = 'Class Notes';
+    }
+    drupal_set_title($title);
+  }
+}
+
+/**
+ * Callback function for classnotes.
+ * Show class notes by class year.
+ */
+function cu_class_notes_archive() {
+  $output = array();
+
+  // Class year filter form.
+  $output['filter'] = drupal_get_form('cu_class_notes_filter_form', 'class');
+  $output['filter']['#weight'] = -100;
+
+  // Start query.
+  $query = db_select('node', 'n');
+  $query = $query->extend('PagerDefault')->limit(20);
+  $query->condition('n.type', 'class_note', '=');
+  $query->condition('n.status', 1, '=');
+  $query->fields('n', array('nid', 'title', 'sticky', 'created'));
+
+  // Join class year field
+  $query->join("field_data_field_class_note_class_year", "year", "n.nid = year.entity_id");
+  $query->fields('year', array('field_class_note_class_year_value'));
+
+  $query->orderBy('field_class_note_class_year_value', 'ASC');
+  $query->orderBy('created', 'DESC');
+  $nids = $query->execute()->fetchCol();
+  $nodes = node_load_multiple($nids);
+  foreach ($nodes as $nid => $node) {
+    $output[] = cu_class_notes_node_output($node, $year1 = NULL, $year2 = NULL);
+    $output['#sorted'] = TRUE;
+  }
+  $output['pager'] = array(
+    '#theme' => 'pager',
+    '#tags' => array(),
+    '#weight' => 100,
+  );
+  $output['#sorted'] = TRUE;
+  return $output;
+}
+
+/**
+ * Callback function for classnotes/recent.
+ * Show class notes by recently added.
+ */
+function cu_class_notes_archive_recent() {
+  $output = array();
+
+  // Class year filter form.
+  $output['filter'] = drupal_get_form('cu_class_notes_filter_form', 'created');
+  $output['filter']['#weight'] = -100;
+
+  // Start query.
+  $query = db_select('node', 'n');
+  $query = $query->extend('PagerDefault')->limit(20);
+  $query->condition('n.type', 'class_note', '=');
+  $query->condition('n.status', 1, '=');
+  $query->fields('n', array('nid', 'title', 'sticky', 'created'));
+  $query->orderBy('created', 'DESC');
+  $nids = $query->execute()->fetchCol();
+  $nodes = node_load_multiple($nids);
+  foreach ($nodes as $nid => $node) {
+    $output[] = cu_class_notes_node_output($node, $year1 = NULL, $year2 = NULL);
+    $output['#sorted'] = TRUE;
+  }
+  $output['pager'] = array(
+    '#theme' => 'pager',
+    '#tags' => array(),
+    '#weight' => 100.
+  );
+  return $output;
+}
+
+/**
+ * Callback function for classnotes/recent.
+ * Show class notes by recently added.
+ */
+function cu_class_notes_archive_added($date1, $date2) {
+  $output = array();
+
+  // Class year filter form.
+  $output['filter'] = drupal_get_form('cu_class_notes_filter_form', 'class');
+  $output['filter']['#weight'] = -100;
+
+  // Convert dates
+  $dates = array();
+  $dates[] = strtotime($date1);
+  $dates[] = strtotime($date2);
+
+  // Class year filter form, adding created date range arguments.
+  $output['filter'] = drupal_get_form('cu_class_notes_filter_range_form', array($date1, $date2));
+  $output['filter']['#weight'] = -100;
+
+  // Start query.
+  $query = db_select('node', 'n');
+  $query = $query->extend('PagerDefault')->limit(20);
+  $query->condition('n.type', 'class_note', '=');
+  $query->condition('n.status', 1, '=');
+  $query->fields('n', array('nid', 'title', 'sticky', 'created'));
+
+  // Join class year field
+  $query->join("field_data_field_class_note_class_year", "year", "n.nid = year.entity_id");
+  $query->fields('year', array('field_class_note_class_year_value'));
+  // Get only notes created within date range
+  $query->condition('created', $dates, 'BETWEEN');
+  $query->orderBy('field_class_note_class_year_value', 'ASC');
+  $query->orderBy('created', 'DESC');
+  $nids = $query->execute()->fetchCol();
+  $nodes = node_load_multiple($nids);
+  foreach ($nodes as $nid => $node) {
+    $output[] = cu_class_notes_node_output($node, $year1 = NULL, $year2 = NULL);
+    $output['#sorted'] = TRUE;
+  }
+  $output['pager'] = array(
+    '#theme' => 'pager',
+    '#tags' => array(),
+    '#weight' => 100.
+  );
+  return $output;
+}
+
+/**
+ * Callback function for classnotes/recent.
+ * Show class notes by recently added.
+ */
+function cu_class_notes_archive_added_year($date1, $date2, $year_arg_1 = NULL, $year_arg_2 = NULL) {
+  $output = array();
+
+  // Class year filter form.
+  $output['filter'] = drupal_get_form('cu_class_notes_filter_form', 'class');
+  $output['filter']['#weight'] = -100;
+
+  // Convert dates
+  $dates = array();
+  $dates[] = strtotime($date1);
+  $dates[] = strtotime($date2);
+
+  $year1 =(int) $year_arg_1;
+  $year2 =(int) $year_arg_2;
+
+  // Start query.
+  $query = db_select('node', 'n');
+  $query = $query->extend('PagerDefault')->limit(20);
+  $query->condition('n.type', 'class_note', '=');
+  $query->condition('n.status', 1, '=');
+  $query->fields('n', array('nid', 'title', 'sticky', 'created'));
+
+  // Join class year field
+  $query->join("field_data_field_class_note_class_year", "year", "n.nid = year.entity_id");
+  $query->fields('year', array('field_class_note_class_year_value'));
+  if ($year2) {
+    $years = array();
+    $years[] = $year1;
+    $years[] = $year2;
+    $query->condition('year.field_class_note_class_year_value', $years, 'BETWEEN');
+  } else {
+    $query->condition('year.field_class_note_class_year_value', $year1, '=');
+  }
+  // Get only notes created within date range
+  $query->condition('created', $dates, 'BETWEEN');
+  $query->orderBy('field_class_note_class_year_value', 'ASC');
+  $query->orderBy('created', 'DESC');
+  print $query;
+  $nids = $query->execute()->fetchCol();
+  $nodes = node_load_multiple($nids);
+  foreach ($nodes as $nid => $node) {
+    $output[] = cu_class_notes_node_output($node, $year1, $year2);
+    $output['#sorted'] = TRUE;
+  }
+  $output['pager'] = array(
+    '#theme' => 'pager',
+    '#tags' => array(),
+    '#weight' => 100.
+  );
+  return $output;
+}
+
+
+/**
+ * Callback function for classnotes/year/%.
+ * Show class notes for a given year.
+ */
+function cu_class_notes_archive_year($arg2 = NULL, $arg3 = NULL) {
+  $sort = (arg(3) == 'recent') ? TRUE : FALSE;
+  $year1 =(int) $arg2;
+  $year2 =(int) $arg3;
+  $output = array();
+
+  // Class year filter form.
+  $output['filter'] = drupal_get_form('cu_class_notes_filter_form', 'class');
+  $output['filter']['#weight'] = -100;
+
+  // Start query.
+  $query = db_select('node', 'n');
+  $query = $query->extend('PagerDefault')->limit(20);
+  $query->condition('n.type', 'class_note', '=');
+  $query->condition('n.status', 1, '=');
+  $query->fields('n', array('nid', 'title', 'sticky', 'created'));
+
+  // Join class year field
+  $query->join("field_data_field_class_note_class_year", "year", "n.nid = year.entity_id");
+  $query->fields('year', array('field_class_note_class_year_value'));
+  if ($year2) {
+    $years = array();
+    $years[] = $year1;
+    $years[] = $year2;
+    $query->condition('year.field_class_note_class_year_value', $years, 'BETWEEN');
+  } else {
+    $query->condition('year.field_class_note_class_year_value', $year1, '=');
+  }
+  $query->orderBy('field_class_note_class_year_value', 'ASC');
+  if ($sort) {
+    $query->orderBy('created', 'DESC');
+  }
+  else {
+    $query->orderBy('created', 'ASC');
+  }
+  $nids = $query->execute()->fetchCol();
+  $nodes = node_load_multiple($nids);
+  if (!$nodes) {
+    $output['no_results']['#markup'] = '<p>There are no class notes for that year.</p>';
+    return $output;
+  }
+  foreach ($nodes as $nid => $node) {
+    $output[] = cu_class_notes_node_output($node, $year1, $year2 = NULL);
+    $output['#sorted'] = TRUE;
+  }
+  $output['pager'] = array(
+    '#theme' => 'pager',
+    '#tags' => array(),
+    '#weight' => 100.
+  );
+  return $output;
+}
+
+/**
+ * Output for class note nodes.
+ */
+function cu_class_notes_node_output($node, $year1, $year2) {
+  // Get body field
+  $field = field_get_items('node', $node, 'body');
+  $content = field_view_value('node', $node, 'body', $field[0]);
+  // Get class year field
+  $field = field_get_items('node', $node, 'field_class_note_class_year');
+  $year = field_view_value('node', $node, 'field_class_note_class_year', $field[0]);
+  // Build note output
+  $nid = $node->nid;
+  // Don't show year if the list of notes is filtered to a single year.
+  if (isset($year2) || (!isset($year1) && !isset($year2))) {
+    $output[$nid]['year']['#markup'] = l($year['#markup'], 'classnotes/year/' . $year['#markup']);
+    $output[$nid]['year']['#prefix'] = '<div class="class-note-year">';
+    $output[$nid]['year']['#suffix'] = '</div>';
+  }
+  $output[$nid]['content']['#markup'] = $content['#markup'];
+
+  // Note posted date
+  $output[$nid]['posted_date']['#markup'] = 'Posted ' .format_date($node->created, 'cu_medium_date');
+  $output[$nid]['posted_date']['#prefix'] = '<div class="class-note-posted-date">';
+  $output[$nid]['posted_date']['#suffix'] = '</div>';
+
+  // Note wrapper marlup
+  $output[$nid]['#prefix'] = '<div class="class-note-single node-view-mode-teaser clearfix">';
+  $output[$nid]['#suffix'] = '</div>';
+  // Add edit link if user has access
+  if (node_access('update', $node)) {
+    $output[$nid]['edit']['#markup'] = l('edit', 'node/' . $node->nid . '/edit', array('attributes' => array('class' => array('edit-link'))));
+  }
+  return $output;
+}
+
+/**
+ * Implements hook_form().
+ * Filter form for class notes.
+ */
+function cu_class_notes_filter_form($form, &$form_state, $order) {
+  $form = array();
+  $years = array();
+  // Build select list of available years
+  $query = db_select('field_data_field_class_note_class_year', 'year');
+  $query->fields('year', array('field_class_note_class_year_value'));
+  $query->groupBy('year.field_class_note_class_year_value');
+  $results = $query->execute()->fetchCol();
+  foreach ($results as $result) {
+    $years[$result] = $result;
+  }
+  $form['classnotes_filter'] = array(
+    '#type' => 'fieldset',
+    '#title' => NULL,
+    '#attributes' => array('class' => array('container-inline')),
+  );
+  $selected_year = arg(2);
+  $form['classnotes_filter']['year'] = array(
+    '#type' => 'select',
+    '#options' => $years,
+    '#empty_option' =>t('- Select -'),
+    '#title' => t('Filter by Year'),
+    '#prefix' => '<div class="classnotes-filter">',
+    '#suffix' => '</div>',
+  );
+  if (isset($years[$selected_year])) {
+    $form['classnotes_filter']['year']['#default_value'] = $selected_year;
+  }
+
+
+  $form['classnotes_filter']['sort'] = array(
+      '#type' => 'select',
+      '#options' => array(
+        'class' => 'Class Year',
+        'created' => 'Date Posted'
+      ),
+      '#title' => t('Sort by'),
+      '#prefix' => '<div class="classnotes-sort">',
+      '#suffix' => '</div>',
+  );
+  if (arg(3) == 'recent') {
+    $form['classnotes_filter']['sort']['#default_value'] = 'created';
+  }
+  $form['classnotes_filter']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+    '#prefix' => '<div class="classnotes-submit">',
+    '#suffix' => '</div>',
+  );
+  $form['classnotes_filter']['view_all'] = array(
+    '#markup' => l('View all Class Notes', 'classnotes'),
+    '#prefix' => '<div class="classnotes-view-all">',
+    '#suffix' => '</div>',
+  );
+  $form['#submit'][] = 'cu_classnotes_form_filter_submit';
+  return $form;
+}
+
+/**
+ * Submit function for cu_class_notes_filter_form().
+ */
+function cu_classnotes_form_filter_submit($form, $form_state) {
+  if (!empty($form_state['values']['year']) && ($form_state['values']['sort'] == 'created')) {
+    $year = $form_state['values']['year'];
+    drupal_goto('classnotes/year/' . $year . '/recent');
+  }
+  elseif (!empty($form_state['values']['year'])) {
+    $year = $form_state['values']['year'];
+    drupal_goto('classnotes/year/' . $year);
+  }
+  elseif ($form_state['values']['sort'] == 'created')  {
+    drupal_goto('classnotes/recent');
+  }
+  else {
+    drupal_goto('classnotes');
+  }
+}
+
+/**
+ * Implements hook_form().
+ * Filter form for class notes.
+ */
+function cu_class_notes_filter_range_form($form, &$form_state, $dates) {
+  $form = array();
+  $years = array();
+  // Convert dates
+  $dates_converted = array();
+  $dates_converted[] = strtotime($dates[0]);
+  $dates_converted[] = strtotime($dates[1]);
+
+  $query = db_select('field_data_field_class_note_class_year', 'year');
+  $query->fields('year', array('field_class_note_class_year_value', 'entity_id'));
+  $query->groupBy('year.field_class_note_class_year_value');
+
+  $query->join('node', 'n', 'year.entity_id = n.nid');
+
+  $query->condition('n.created', $dates_converted, 'BETWEEN');
+  $results = $query->execute()->fetchCol();
+  foreach ($results as $result) {
+    $years[$result] = $result;
+  }
+  $form['classnotes_filter'] = array(
+    '#type' => 'fieldset',
+    '#title' => NULL,
+    '#attributes' => array('class' => array('container-inline')),
+  );
+  $form['classnotes_filter']['year'] = array(
+    '#type' => 'select',
+    '#options' => $years,
+    '#empty_option' =>t('- Select -'),
+    '#title' => t('Filter by Year'),
+    '#prefix' => '<div class="classnotes-filter">',
+    '#suffix' => '</div>',
+  );
+  $form['classnotes_filter']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  );
+  $form['classnotes_filter']['view_all'] = array(
+    '#markup' => l('View all Class Notes', 'classnotes'),
+    '#prefix' => '<div class="classnotes-view-all">',
+    '#suffix' => '</div>',
+  );
+  $form['dates'] = array(
+    '#type' => 'hidden',
+    '#value' => $dates,
+  );
+  $form['#submit'][] = 'cu_classnotes_form_filter_range_submit';
+
+  return $form;
+}
+/**
+ * Submit function for cu_class_notes_filter_range_form().
+ */
+function cu_classnotes_form_filter_range_submit($form, $form_state) {
+  $year = $form_state['values']['year'];
+  $dates = $form_state['values']['dates'];
+  // Build url = classnotes/added/YYYY-MM-DD/YYYY-MM-DD/year/YYYY
+  $url_parts = array();
+  $url_parts[] = 'classnotes';
+  $url_parts[] = 'added';
+  $url_parts[] = $dates[0];
+  $url_parts[] = $dates[1];
+  $url_parts[] = 'year';
+  $url_parts[] = $year;
+  $url = join('/', $url_parts);
+  drupal_goto($url);
+}
+
+/**
+ * Provides available years for field_class_note_class_year.
+ */
+function _cu_class_notes_class_years() {
+  $years = array();
+  for($i=1900; $i <= 2050; $i++) {
+    $years[$i] = $i;
+  }
+  return $years;
+}
+
+/**
+ * Implements hook_form_formid_alter().
+ *
+ * Change class year form from select menu to text field.
+ * Field will still only accept integer values provided
+ * from _cu_class_notes_class_years().
+ */
+function cu_class_notes_form_node_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['#node']->type == 'class_note') {
+    $form['field_class_note_class_year'][LANGUAGE_NONE]['#type'] = 'textfield';
+  }
+}

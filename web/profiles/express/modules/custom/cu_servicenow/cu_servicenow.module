@@ -1,0 +1,488 @@
+<?php
+
+/**
+ * @file
+ * This module sets up a boolean value for webforms to integrate with
+ * ServiceNow.
+ *
+ * cURL requests in this module:
+ *   1 - Nature of Issue of form: _servicenow_incident_assignments()
+ *   2 - Create Incident: _servicenow_curl_request($form_values)
+ *   3 - Attachment API: _servicenow_upload_file($sys_id, $file_pathinfo,
+ *                   $file_mimetype)
+ *   4 - Form Report: _form_report_thyself($sn_incident_map, $form_name)
+ *
+ * cURL request 1 is called when you visit the "Form settings" tab in the form
+ * edit page. Upon save, the values selected from cURL 1 are used to populate
+ * cURL 4 and the cURL 4 request is sent. The response from cURL 4 is used to
+ * set a custom variable that sends the "intg" fields in with the incidents
+ * from that form. Thus reporting a submission from that form.
+ *
+ * cURL request 2 is called when a submission is made. Clicking submit calls
+ * the _servicenow_submit function and that is what sends in the incident with
+ * its associated data to ServiceNow.
+ *
+ * If there is a FID (File ID) within that form and the field has been mapped
+ * to the "attachment" option of sn_field_mapping, then cURL 3 is called. It's
+ * called only after cURL 2 has successfully created the incident. We use the
+ * table_sys_id from the incident response from cURL 2 to populate the needed
+ * values for cURL 3. That's sent directly after cURL 2 but also within the
+ * _servicenow_submit function.
+ *
+ * Because we set a custom variable for the "intg" fields, we automatically
+ * report the form submission when the incident is created.
+ *
+ * And that is why we have 4 different cURL requests.
+ */
+
+function cu_servicenow_menu() {
+  $items = [];
+
+  $items['admin/config/content/servicenow'] = [
+    'title' => t('ServiceNow Service Account'),
+    'description' => t('Configuration options for ServiceNow/Webform integration.'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cu_servicenow_config_form'),
+    'access arguments' => array('administer modules'),
+  ];
+
+  return $items;
+}
+
+function cu_servicenow_config_form($form, &$form_state) {
+  $form = [];
+
+  $form['sn_environment'] = [
+    '#type' => 'select',
+    '#title' => t('Environment'),
+    '#options' => [
+      'https://coloradosandbox.service-now.com' => t('Sandbox'),
+      'https://colorado.service-now.com' => t('Production'),
+    ],
+    '#default_value' => variable_get('sn_environment', 'https://coloradosandbox.service-now.com'),
+  ];
+
+  $form['sn_status'] = [
+    '#type' => 'select',
+    '#title' => t('Status'),
+    '#options' => array(
+      'enabled' => t('Enabled'),
+      'disabled' => t('Disabled'),
+    ),
+    '#default_value' => variable_get('sn_status', 'enabled'),
+  ];
+  $form['submit'] = [
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  ];
+
+  return $form;
+}
+
+function cu_servicenow_config_form_validate($form, &$form_state) {
+  global $conf;
+  if (!isset($conf['sn_key']) && $form_state['values']['sn_status'] == 'enabled') {
+    form_set_error('sn_status', t('ServiceNow key must be set before enabling.'));
+  }
+}
+
+function cu_servicenow_config_form_submit($form, &$form_state) {
+  variable_set('sn_environment', $form_state['values']['sn_environment']);
+  variable_set('sn_status', $form_state['values']['sn_status']);
+  watchdog('cu_servicenow', t('ServiceNow config form changes have been saved.'));
+  drupal_set_message(t('Your changes have been saved.'), 'status');
+}
+
+/**
+ * Implements hook_form_form_id_alter().
+ *
+ * Move the SN checkbox to the publishing tab.
+ */
+function cu_servicenow_form_webform_node_form_alter(&$form, &$form_state) {
+  $form['options']['field_cu_servicenow'] = $form['field_cu_servicenow'];
+  unset($form['field_cu_servicenow']);
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Add custom submit handler to send info to ServiceNow.
+ */
+function cu_servicenow_form_alter(&$form, &$form_state, $form_id) {
+  $sn_status = variable_get('sn_status', 'enabled');
+  if ($sn_status == 'enabled' && $form['#node']->field_cu_servicenow['und'][0]['value']) {
+    if (isset($form['#node']->webform)
+      && $form_id != 'webform_configure_form'
+      && $form_id != 'webform_component_edit_form'
+      && $form_id != 'webform_node_form'
+      && $form_id != 'webform_components_form') {
+      $form['#validate'][] = 'servicenow_validate';
+      $form['#submit'][] = 'servicenow_submit';
+    }
+    if ($form_id == 'webform_configure_form') {
+      $form['servicenow_incident_mapping'] = [
+        '#type' => 'fieldset',
+        '#title' => t('ServiceNow Incident Assignment'),
+      ];
+
+      $incidents = _servicenow_incident_assignments();
+      $incidents = $incidents->result;
+
+      $nid = $form['#node']->nid;
+
+      $sn_incident = [];
+
+      foreach ($incidents as $incident) {
+        $sn_incident[$incident->sys_id] = $incident->u_business_service . ': ' . $incident->u_nature_of_issue;
+      }
+
+      if (!empty($sn_incident)) {
+        asort($sn_incident);
+        $options = $sn_incident;
+      } else {
+        $options = ['N/A' => 'N/A'];
+      }
+
+      $form['servicenow_incident_mapping']['options'] = [
+        '#type' => 'select',
+        //'#title' => t('ServiceNow Incident Assignment'),
+        '#description' => t('This will map the Business Service and Nature of Issue for this form.'),
+        '#options' => $options,
+        '#default_value' => variable_get('sn_incident_sys_id_' . $nid, ''),
+      ];
+
+      $form['servicenow_incident_mapping']['form_report'] = [
+        '#type' => 'checkbox',
+        '#title' => t('Report form creation?'),
+        '#description' => t('Only check this if you are creating a new form.'),
+        '#default_value' => FALSE,
+      ];
+
+      $form['#validate'][] = 'servicenow_incident_mapping_validate';
+      $form['#submit'][] = 'servicenow_incident_mapping_submit';
+    }
+    if ($form_id == 'webform_component_edit_form') {
+      $field_machine_name = $form['form_key']['#default_value'];
+      $default_value = variable_get('sn_field_mapping', '');
+      $form['servicenow'] = [
+        '#type' => 'fieldset',
+        '#title' => t('ServiceNow'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#weight' => 5,
+      ];
+      $form['servicenow']['field_map'] = [
+        '#type' => 'select',
+        '#title' => t('Map this field to a ServiceNow Incident field below'),
+        '#options' => [
+          'N/A' => '-No selection-',
+          'short_description' => 'Short Description',
+          'description' => 'Description',
+          'attachment' => 'Attachment',
+        ],
+        '#default_value' => $default_value[$field_machine_name],
+        '#weight' => 5,
+        '#required' => FALSE,
+      ];
+      $form['#submit'][] = 'servicenow_save_field_map_submit';
+    }
+  } else {
+    // Don't show the SN integration option on webform creation/edit.
+    $form['field_cu_servicenow']['#access'] = FALSE;
+  }
+}
+
+function servicenow_incident_mapping_validate($form, &$form_state) {
+  $nid = $form['#node']->nid;
+  $existing_form_report = variable_get('sn_report_form_' . $nid, NULL);
+  $forms_current_incident_assignment = variable_get('sn_incident_sys_id_' . $nid, NULL);
+
+  if (!isset($existing_form_report) && $form_state['values']['form_report'] == FALSE) {
+    form_set_error('form_report', t('You need to send an initial report of your form.'));
+  } else if (isset($existing_form_report) && $forms_current_incident_assignment !== $form_state['values']['options'] && $form_state['values']['form_report'] == FALSE) {
+    form_set_error('form_report', t('You have changed the incident assignment and need to report your form.'));
+  }
+}
+
+function servicenow_incident_mapping_submit($form, &$form_state) {
+  $nid = $form['#node']->nid;
+  $sys_id = $form_state['values']['options'];
+  $incidents = _servicenow_incident_assignments();
+
+  $sn_full_incident_info = [];
+  foreach ($incidents->result as $incident) {
+    $sn_full_incident_info[$incident->sys_id] = ['nature_of_issue' => $incident->u_nature_of_issue, 'business_service' => $incident->u_business_service];
+  }
+
+  $output = [
+    'sys_id' => $sys_id,
+    'nature_of_issue' => $sn_full_incident_info[$sys_id]['nature_of_issue'],
+    'business_service' => $sn_full_incident_info[$sys_id]['business_service'],
+  ];
+
+  variable_set('sn_incident_' . $nid, $output);
+  variable_set('sn_incident_sys_id_' . $nid, $output['sys_id']);
+  watchdog('cu_servicenow', t('Incident assignment has been made for NID: :nid', [':nid' => $nid]));
+
+  if ($form_state['values']['form_report'] == TRUE) {
+    $int_request_json = _form_report_thyself($output, $form['#node']->title);
+    $int_request = json_decode($int_request_json);
+    $form_setting_nid = $form['nid']['#value'];
+    variable_set('sn_report_form_' . $form_setting_nid, $int_request->result);
+  }
+}
+
+function servicenow_save_field_map_submit($form, &$form_state) {
+  $current_vars = variable_get('sn_field_mapping', []);
+  if (isset($form_state['values']['servicenow']['field_map'])) {
+    $sn_value = [$form_state['values']['form_key'] => $form_state['values']['servicenow']['field_map']];
+    $sn_value = array_merge($current_vars, $sn_value);
+    variable_set('sn_field_mapping', $sn_value);
+    drupal_set_message(t('Successfully mapped webform field to ServiceNow.'), 'notice');
+  }
+}
+
+/**
+ * Servicenow request validate.
+ */
+function servicenow_validate($form, &$form_state) {
+  $nid = $form['#node']->nid;
+  $ia = variable_get('sn_incident_' . $nid, []);
+  if (empty($ia)) {
+    form_set_error('error', t('No incident assignment, please contact the site owner.'));
+  }
+}
+
+/**
+ * Custom submit handler for forms with SN integaration enabled.
+ */
+function servicenow_submit(&$form, &$form_state) {
+  global $user;
+  global $base_url;
+  $nid = $form['#node']->nid;
+
+  // If the current node has SN enabled, do code, else move on.
+  $form_values = $form_state['input']['submitted'];
+  $sn_field_map = variable_get('sn_field_mapping', '');
+  $sn_form_report = variable_get('sn_report_form_' . $nid, '');
+
+  foreach($form_values as $key => $value) {
+    if(key_exists($key, $sn_field_map) && $sn_field_map[$key] != 'N/A') {
+      $sn[$sn_field_map[$key]] = $value;
+    } else {
+      $non_sn_field_values[$key] = $value;
+    }
+  }
+
+  // @todo Add all fields that aren't mapped into the 'description' field and send together.
+
+  $sn_incident_map = variable_get('sn_incident_' . $nid, []);
+
+  // Some of these values don't need to be variables.
+  // Using the user account values means they must be logged in.
+  $sn['task_for'] = $user->name;
+  $sn['u_alternate_email'] = $user->mail;
+  $sn['state'] = '9';
+  $sn['contact_type'] = 'self-service';
+  $sn['cmdb_ci'] = $sn_incident_map['business_service']; // Business Service
+  $sn['u_nature_of_issue'] = $sn_incident_map['nature_of_issue']; // Nature of Issue
+  $sn['u_intg_assignment'] = $sn_form_report->sys_id;
+  $sn['u_intg_table'] = $sn_form_report->sys_class_name;
+
+  // For each non SN field value, add it to the end of the description field.
+  foreach ($non_sn_field_values as $key => $value) {
+    $sn['description'] .= ' -- (' . $key . ': ' . $value . ')';
+  }
+
+  $request = _servicenow_curl_request($sn);
+
+  // If there is a field with an fid that has been field mapped with "attachment", send file as attachment with incident.
+  foreach ($form_state['complete form']['submitted'] as $key_submitted => $field) {
+    if (isset($field['#type'])
+      && $field['#type'] == 'managed_file'
+      && $field['#value']['fid'] != 0
+      && $sn_field_map[$key_submitted] == $key_submitted) {
+      $file = $form_state['complete form']['submitted'][$key_submitted]['#file'];
+      $location = $base_url . '/sites/default/files/';
+      $location = str_replace('public://', $location, $file->uri);
+
+      foreach ($form_values as $form_value) {
+        if (is_array($form_value) && key_exists('fid', $form_value)) {
+          $sn['description'] .= ' -- (File location: ' . $location . ')';
+        }
+      }
+
+      $temp_sys_id = $request->result->sys_id;
+      $file_mimetype = $form_state['complete form']['submitted'][$field['#title']]['#file']->filemime;
+
+      foreach ($form_state['complete form']['submitted'] as $key => $form_field) {
+        if (is_array($form_field) && key_exists('fid', $form_field)) {
+          _servicenow_upload_file($temp_sys_id, pathinfo($file->uri), $file_mimetype);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Available under "form settings" when creating/editing a form.
+ *
+ * This returns a list of options for incident assignments.
+ */
+function _servicenow_incident_assignments() {
+  global $conf;
+  $sn_key = 'wexpress:' . $conf['sn_key'];
+  $incident_assignment = variable_get('sn_environment', 'https://coloradosandbox.service-now.com') . '/api/now/v2/table/u_inc_assignment?sysparm_fields=sys_id,u_business_service,u_nature_of_issue,u_active,sys_updated_on&sysparm_display_value=true&sysparm_exclude_reference_link=true';
+
+  //
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_HTTPHEADER, Array("Accept:application/json","Content-Type:application/json"));
+  curl_setopt($ch, CURLOPT_USERPWD, $sn_key);
+  curl_setopt($ch, CURLOPT_URL, $incident_assignment);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+  $result = curl_exec($ch);
+  curl_setopt($ch, CURLOPT_HEADER, 1);
+  curl_setopt($ch, CURLOPT_VERBOSE, 1);
+  curl_close($ch);
+
+  $result = json_decode($result);
+  watchdog('cu_servicenow', 'ServiceNow incident assignment list cURL request was successful.');
+
+  return $result;
+}
+
+/**
+ * ServiceNow API call via cURL.
+ *
+ * See documentation here:
+ * https://docs.servicenow.com/bundle/geneva-servicenow-platform/page/integrate/inbound_rest/reference/r_TableAPI-POST.html
+ *
+ * Send in form_values from the custom submit handler.
+ * The values must match available fields in ServiceNow.
+ */
+function _servicenow_curl_request($form_values) {
+  global $conf;
+  $sn_key = 'wexpress:' . $conf['sn_key'];
+
+  $request = variable_get('sn_environment', 'https://coloradosandbox.service-now.com') . '/api/now/table/incident';
+  $data = json_encode($form_values);
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_HTTPHEADER, Array("Accept:application/json","Content-Type:application/json"));
+  curl_setopt($ch, CURLOPT_USERPWD, $sn_key);
+  curl_setopt($ch, CURLOPT_URL, $request);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+  $result = curl_exec($ch);
+  curl_setopt($ch, CURLOPT_HEADER, 1);
+  curl_setopt($ch, CURLOPT_VERBOSE, 1);
+  curl_close($ch); // close cURL handler
+
+  $result = json_decode($result);
+
+  //$result->headers = $headers;
+  if ( (!isset($result->status)) && (!empty($result)) ) {
+    $result->status = 'success';
+  } else {
+    $result->status = 'failure';
+  }
+  if ( ($result->status == 'failure') || (empty($result)) ) {
+    watchdog('cu_servicenow', 'ServiceNow API not communicating correctly: ' . $request);
+    drupal_set_message(t('There was a problem sending your request to ServiceNow. Please contact the site owner.'), 'error');
+    return null;
+  } else {
+    $inc_num = $result->result->number;
+    watchdog('cu_servicenow', 'ServiceNow incident was successfully sent: :incident', array(':incident' => $inc_num));
+    drupal_set_message(t('Your incident number is :incident, please keep this number for your records.', array(':incident' => $inc_num)), 'status');
+    return $result;
+  }
+}
+
+/**
+ * ServiceNow Attachment API call via cURL.
+ *
+ * See documentation here:
+ * https://docs.servicenow.com/bundle/geneva-servicenow-platform/page/integrate/inbound_rest/reference/r_AttachmentAPI-POSTmultipart.html
+ *
+ * If an fid is found, we need to send that up to SN as an attachment.
+ */
+function _servicenow_upload_file($sys_id, $file_pathinfo, $file_mimetype) {
+  global $conf;
+  $sn_key = 'wexpress:' . $conf['sn_key'];
+
+  $request = variable_get('sn_environment', 'https://coloradosandbox.service-now.com');
+  $request .= '/api/now/attachment/upload';
+
+  $ch = curl_init();
+
+  // drupal_realpath should only be used when we control the variable being used.
+  // Otherwise there are security risks involved.
+  $realpath = drupal_realpath($file_pathinfo['dirname'] . '/' . $file_pathinfo['basename']);
+
+  $data = [
+    'table_name' => 'incident',
+    'table_sys_id' => $sys_id,
+    'encryption_context' => 'undefined',
+    'uploadFile' => new CURLFile($realpath, $file_mimetype, $file_pathinfo['basename']),
+  ];
+
+  curl_setopt($ch, CURLOPT_URL, $request);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, Array('Accept:application/json'));
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+  curl_setopt($ch, CURLOPT_USERPWD, $sn_key);
+
+  $result = curl_exec($ch);
+
+  if (curl_errno($ch)) {
+    $result = curl_error($ch);
+  }
+
+  watchdog('cu_servicenow', 'File attachment sent to ServiceNow: ' . $result);
+  curl_close ($ch);
+}
+
+/**
+ * cURL request for reporting the form's metadata back to SN.
+ */
+function _form_report_thyself($sn_incident_map, $form_name) {
+  global $conf;
+  global $base_url;
+  $sn_key = 'wexpress:' . $conf['sn_key'];
+
+  $request = variable_get('sn_environment', 'https://coloradosandbox.service-now.com');
+  $request .= '/api/now/v2/table/u_web_express_forms';
+
+  $data = [
+    "u_form_name" => $form_name,
+    "u_nature_of_issue" => $sn_incident_map['nature_of_issue'],
+    "u_order" => "100",
+    "u_table" => "incident",
+    "url" => $base_url,
+  ];
+
+  $data = json_encode($data);
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, Array("Content-Type:application/json"));
+  curl_setopt($ch, CURLOPT_USERPWD, $sn_key);
+  curl_setopt($ch, CURLOPT_URL, $request);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+  $result = curl_exec($ch);
+
+  if (curl_errno($ch)) {
+    $result = curl_error($ch);
+  }
+  curl_close ($ch);
+  watchdog('cu_servicenow', 'Form report sent to ServiceNow: ' . $result);
+
+  return $result;
+}

@@ -1,0 +1,16 @@
+name = Campus News Bundle
+description = The Campus News Bundle displays customizable list of articles from CU Boulder Today.
+core = 7.x
+package = CU Campus News
+dependencies[] = cu_campus_news
+version = 7.x-1.4
+project = cu_campus_news_bundle
+project status url = https://github.com/CuBoulder/cu_campus_news_bundle
+project_demo_url = https://websupport.colorado.edu/category/331-campus-news
+bundle_request = 1
+bundle_group = 'request_bundles'
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

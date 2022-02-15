@@ -1,0 +1,269 @@
+<?php
+/**
+ * @file
+ * Code for the Advanced Timeline feature.
+ */
+
+include_once 'cu_content_sequence.features.inc';
+
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Let Drupal know we have template files in the module.
+ */
+function cu_content_sequence_theme_registry_alter(&$theme_registry) {
+  $module_path = drupal_get_path('module', 'cu_content_sequence');
+  $theme_registry_copy = $theme_registry;
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'bean', $module_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+  $hooks = array('bean');
+  foreach ($hooks as $h) {
+	  if (isset($theme_registry[$h]['theme paths'])) {
+	    $first_element = array_shift($theme_registry[$h]['theme paths']);
+	    array_unshift($theme_registry[$h]['theme paths'], array_shift($theme_registry[$h]['theme paths']), $module_path);
+  	}
+  }
+}
+
+/**
+ * Implements module_preprocess_entity().
+ *
+ * Prepare output for timelines.
+ */
+function cu_content_sequence_preprocess_entity(&$vars) {
+  $entity_type = $vars['elements']['#entity_type'];
+  $bundle = $vars['elements']['#bundle'];
+
+  // Only preprocess slider beans.
+  $events = array();
+  if ($entity_type == 'bean' && $bundle == 'content_sequence') {
+    $vars['theme_hook_suggestions'][] = 'bean__content_sequence__' . $vars['field_cont_seq_display'][0]['value'];
+
+    // Add css/js for simple horizontal timeline.
+    if ($vars['field_cont_seq_display'][0]['value'] == 'simple_horizontal') {
+      drupal_add_js(drupal_get_path('module', 'cu_content_sequence') . '/js/cu-content-sequence-simple-horizontal.js');
+      drupal_add_css(drupal_get_path('module', 'cu_content_sequence') . '/css/cu-content-sequence-simple-horizontal.css');
+    }
+    // Add css/js for advanced timeline.
+    if ($vars['field_cont_seq_display'][0]['value'] == 'advanced') {
+      drupal_add_js(drupal_get_path('module', 'cu_content_sequence') . '/js/timeline-min.js');
+      drupal_add_css(drupal_get_path('module', 'cu_content_sequence') . '/css/timeline.css');
+    }
+
+    // Prepare timeline data from field collection.
+    $children = array_intersect_key($vars['elements']['field_cont_seq_content'], element_children($vars['elements']['field_cont_seq_content']));
+
+    foreach ($children as $key => $child) {
+      $child = current($child['entity']['field_collection_item']);
+      // Prepare start date.
+      $start_date = array();
+      if (!empty($child['field_cont_seq_date'])) {
+        $date = strtotime($child['field_cont_seq_date']['#items'][0]['value']);
+        $start_date = array(
+          'month' => date('n', $date),
+          'day' => date('j', $date),
+          'year' => date('Y', $date),
+          'timestamp' => $date,
+        );
+      }
+      if (!empty($child['field_cont_seq_display_date'])){
+        $start_date['display_date'] = $child['field_cont_seq_display_date']['#items'][0]['value'];
+      }
+      // Prepare end date.
+      $end_date = array();
+      if (!empty($child['field_cont_seq_end_date'])) {
+        $date = strtotime($child['field_cont_seq_end_date']['#items'][0]['value']);
+        $end_date = array(
+          'month' => date('n', $date),
+          'day' => date('j', $date),
+          'year' => date('Y', $date),
+          'timestamp' => $date,
+        );
+      }
+      if (!empty($child['field_cont_seq_display_end_date'])){
+        $end_date['display_date'] = $child['field_cont_seq_display_end_date']['#items'][0]['value'];
+      }
+      // Initialize array for this timeline item.
+      $events[$key] = array();
+      // Add text to data.
+      $events[$key]['text'] = array(
+        'headline' => render($child['field_cont_seq_title']),
+        'text' => !empty($child['field_cont_seq_body']) ? $child['field_cont_seq_body'][0]['#markup'] : '',
+      );
+      // Add group to data.
+      if (!empty($child['field_cont_seq_group'])) {
+        $events[$key]['group'] = $child['field_cont_seq_group']['#items'][0]['value'];
+      }
+      // Add photo to data.
+      if (!empty($child['field_cont_seq_photos'])) {
+        $events[$key]['media'] = array(
+          'url' => image_style_url('medium', $child['field_cont_seq_photos'][0]['#item']['uri']),
+          'alt' => $child['field_cont_seq_photos'][0]['#item']['alt'],
+          'type' => 'image',
+        );
+      }
+      // Add video to data
+      if (!empty($child['field_cont_seq_video'])) {
+        $events[$key]['media'] = array(
+          'url' => $child['field_cont_seq_video'][0][0]['#url'],
+          'type' => 'video',
+          'rendered' => render($child['field_cont_seq_video']),
+        );
+      }
+      // Add dates to data.
+      if (!empty($start_date)) {
+        $events[$key]['start_date'] = $start_date;
+        $events[$key]['weight'] = $start_date['timestamp'];
+      }
+      else {
+        $events[$key]['weight'] = $key;
+      }
+      if (!empty($end_date)) {
+        $events[$key]['end_date'] = $end_date;
+      }
+
+      // Make label for simple h timeline
+      if (!empty($start_date)) {
+        if (!empty($start_date['display_date'])) {
+          $events[$key]['label'] = $start_date['display_date'];
+        }
+        else {
+          $events[$key]['label'] = date('n/j/Y', $start_date['timestamp']);
+        }
+      }
+      else {
+        $events[$key]['label'] = $key;
+      }
+      $events[$key]['data_index'] = str_pad($key + 1, 4, "0", STR_PAD_LEFT);
+    }
+    // Put all timeline data into array.
+    $data = array(
+      'events' => $events,
+    );
+
+    // Add timeline title/description/photo.
+    if (!empty($vars['field_cont_sequence_title'])) {
+      $data['title']['text']['headline'] = $vars['field_cont_sequence_title'][0]['value'];
+      $vars['timeline_title'] = $vars['field_cont_sequence_title'][0]['value'];
+    }
+    if (!empty($vars['field_cont_seq_description'])) {
+      $data['title']['text']['text'] = render($vars['content']['field_cont_seq_description']);
+    }
+    if (!empty($vars['field_cont_seq_photos'])) {
+      $data['title']['media'] = array(
+        'url' => image_style_url('medium', $vars['field_cont_seq_photos'][0]['uri']),
+        'alt' => $vars['field_cont_seq_photos'][0]['alt'],
+        'type' => 'image',
+      );
+    }
+
+    // Encode timeline data as json for advanced timeline.
+    $vars['json'] = json_encode($data);
+
+    // Make timeline list view.
+    $list = array();
+    if ($vars['field_cont_seq_display'][0]['value'] == 'advanced') {
+      uasort($data['events'], 'drupal_sort_weight');
+    }
+    foreach ($data['events'] as $event) {
+      $list[] = theme('content_sequence_item', array('vars' => $event));
+    }
+
+    // Add data to variables so we can use them in tpl files.
+    $vars['event_list'] = $list;
+    $vars['events_data'] = $data;
+    $vars['uid'] = $vars['bean']->bid;
+    $vars['scale'] = $vars['field_cont_seq_scale'][0]['value'];
+  }
+
+}
+
+/**
+ * Implements hook_theme().
+ */
+function cu_content_sequence_theme(&$existing, $type, $theme, $path) {
+  $registry = array();
+  $template_dir = drupal_get_path('module', 'cu_content_sequence') . '/templates';
+  $registry['content_sequence_item'] = array(
+    'template' => 'content-sequence-item',
+    'path' => $template_dir,
+    'render element' => 'elements',
+  );
+  return $registry;
+}
+
+/**
+ * Implements hook_field_widget_form_alter.
+ *
+ * Make date fieds have no default value.
+ * For some reason, new data fields have a value2 key.
+ * If value2 exists, we can assume it's a new field.
+ */
+function cu_content_sequence_field_widget_form_alter(&$element, &$form_state, $context) {
+  if (!empty($element['#entity_type']) && $element['#entity_type'] == 'field_collection_item') {
+    if ($element['#field_name'] == 'field_cont_seq_date' && $element['#bundle'] == 'field_cont_seq_content') {
+      if (!empty($element['#default_value']['value2'])) {
+        $element['#default_value']['value'] = '';
+      }
+
+    }
+    if ($element['#field_name'] == 'field_cont_seq_end_date' && $element['#bundle'] == 'field_cont_seq_content') {
+      if (!empty($element['#default_value']['value2'])) {
+        $element['#default_value']['value'] = '';
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Add validation function.
+ */
+function cu_content_sequence_form_bean_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['bean']['#value']->type == 'content_sequence') {
+    $form['title']['#access'] = FALSE;
+    $form['#validate'][] = 'cu_content_sequence_validate';
+  }
+}
+
+/**
+ * Vallidation function for cu_content_sequence_form_bean_form_alter().
+ *
+ * If timeline is set to advanced, make sure date fields are not empty.
+ */
+function cu_content_sequence_validate($form, &$form_state) {
+  unset($form_state['values']['field_cont_seq_content'][LANGUAGE_NONE]['add_more']);
+  $items = $form_state['values']['field_cont_seq_content'][LANGUAGE_NONE];
+
+  if ($form_state['values']['field_cont_seq_display'][LANGUAGE_NONE][0]['value'] == 'advanced') {
+    foreach ($items as $key => $item) {
+      if (!$item['field_cont_seq_date'][LANGUAGE_NONE][0]['value']) {
+        form_set_error('field_cont_seq_content][' . LANGUAGE_NONE . '][' . $key . '][field_cont_seq_date', 'Sequence item "' . $title . '" requires a date if the content sequence display is set to "Advanced".');
+      }
+    }
+  }
+}
+
+/**
+ * Allowed values function to return timeline display options.
+ */
+function cu_content_sequence_display_options() {
+  return array(
+    'advanced' => 'Advanced (Timeline)',
+    'simple_horizontal' => 'Simple Horizontal',
+    'simple_vertical' => 'Simple Vertical',
+  );
+}
+
+/**
+ * Allowed values function to return timeline scale options.
+ */
+function cu_content_sequence_scale_options() {
+  return array(
+    '.5' => '.5',
+    '1' => '1',
+    '2' => '2',
+  );
+}

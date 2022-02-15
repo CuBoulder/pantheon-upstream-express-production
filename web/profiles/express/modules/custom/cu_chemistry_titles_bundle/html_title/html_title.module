@@ -1,0 +1,126 @@
+<?php
+
+/**
+ * @defgroup html_title HTML Title
+ */
+
+/**
+ * @file
+ * This module enables limited HTML to be used in node titles. It strips title
+ * markup from RSS feeds to eliminate unsightly markup in feed readers.
+ */
+
+/**
+ * Implementation of hook_menu()
+ */
+function html_title_menu() {
+  $items['admin/config/content/html_title'] = array(
+    'title'            => 'HTML Title settings',
+    'description'      => 'Configure HTML tags used in node titles.',
+    'access arguments' => array('administer site configuration'),
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('html_title_admin_settings'),
+    'type'             => MENU_NORMAL_ITEM,
+    'file'             => 'html_title.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_theme_registry_alter()
+ */
+function html_title_theme_registry_alter(&$theme_registry) {
+  // Re-order search result pre-processing so ours always runs last
+  if (module_exists('search') && is_array($theme_registry['search_result']['preprocess functions'])) {
+    foreach($theme_registry['search_result']['preprocess functions'] as $value) {
+      if ($value != 'html_title_preprocess_search_result') {
+        $callbacks[] = $value;
+      }
+    }
+    $callbacks[] = 'html_title_preprocess_search_result';
+    $theme_registry['search_result']['preprocess functions'] = $callbacks;
+  }
+}
+
+/**
+ * Implementation of hook_preprocess_page()
+ */
+function html_title_preprocess_page(&$vars) {
+  if (array_key_exists('node', $vars)) {
+    // Reset title to allow safe HTML
+    $vars['title'] = html_title_filter_xss($vars['node']->title);
+    // Strip HTML from head title
+    $vars['head_title'] = strip_tags($vars['node']->title);
+    drupal_set_title($vars['head_title']);
+  }
+}
+
+/**
+ * Implementation of template_preprocess_node()
+ */
+function html_title_preprocess_node(&$vars) {
+  switch ($vars['view_mode']) {
+    case 'search_index':
+    case 'rss':
+      return;
+    default:
+      $vars['title'] = html_title_filter_xss($vars['elements']['#node']->title);
+  }
+}
+
+/**
+ * Implementation of hook_preprocess_search_result()
+ */
+function html_title_preprocess_search_result(&$vars) {
+  if (isset($vars['result']['title'])) {
+    $vars['title'] = html_title_filter_xss($vars['result']['title']);
+  }
+}
+
+/**
+* Implementation of hook_node_view()
+*/
+function html_title_node_view($node, $view_mode) {
+  switch ($view_mode) {
+    case 'rss':
+      $node->title = strip_tags($node->title);
+      break;
+  }
+}
+
+/**
+* Implementation hook_views_api()
+*/
+function html_title_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'html_title') .'/views',
+  );
+}
+
+/**
+ * Helper function to help filter out unwanted XSS opportunities.
+ *
+ * Use this function if you expect to have junk or incomplete html. It uses the
+ *   same strategy as the "Fix Html" filter option in configuring the HTML
+ *   filter in the text format configuration.
+ */
+function html_title_filter_xss($title) {
+  $elements = variable_get('html_title_allowed_elements', array('em', 'sub', 'sup'));
+  $dom = new DOMDocument();
+  // Ignore warnings during HTML soup loading.
+  @$dom->loadHTML('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /></head><body>' . $title . '</body></html>', LIBXML_NOENT);
+  $xp = new DOMXPath($dom);
+  $q = "//body//text()";
+  $nodes = $xp->query($q);
+
+  foreach ($nodes as $n) {
+    $n->nodeValue = htmlentities($n->nodeValue, ENT_QUOTES);
+  }
+  $body = str_replace(
+    array('&amp;quot;', '&amp;#039;'),
+    array('&quot;', '&#039;'),
+    $dom->saveHTML($dom->getElementsByTagName('body')->item(0))
+  );
+  return filter_xss($body, $elements);
+}

@@ -1,0 +1,46 @@
+<?php
+
+/**
+ * Add custom logos to file_managed table.
+ */
+function cu_custom_logo_update_7001() {
+  if ($white_logo = variable_get('custom_white_logo', NULL)) {
+    $white_file = file_load($white_logo);
+    $white_file->status = FILE_STATUS_PERMANENT;
+    file_save($white_file);
+  }
+  if ($black_logo = variable_get('custom_black_logo', NULL)) {
+    $black_file = file_load($black_logo);
+    $black_file->status = FILE_STATUS_PERMANENT;
+    file_save($black_file);
+  }
+}
+
+/**
+ * Delete old logos.
+ */
+function cu_custom_logo_update_7002() {
+  // Check to see if there are active custom logos.
+  $logos = array();
+  if (variable_get('custom_white_logo', NULL)) {
+    $logos[] = variable_get('custom_white_logo', NULL);
+  }
+
+  if (variable_get('custom_black_logo', NULL)) {
+    $logos[] = variable_get('custom_black_logo', NULL);
+  }
+  // Query for custom logo files that are not active.
+  $query = db_select('file_usage', 'fu');
+  $query->fields('fu', array('fid', 'module'));
+  $query->condition('fu.module', 'cu_custom_logo', '=');
+  $query->condition('fu.fid', $logos, 'NOT IN');
+  $results = $query->execute()->fetchCol();
+  // Delete inactive custom logo files.
+  if (!empty($results)) {
+    foreach ($results as $fid) {
+      $file = file_load($fid);
+      file_delete($file, TRUE);
+      watchdog('cu_custom_logo', 'Deleting inactive custom logos - file %fid', array('%fid' => $fid), WATCHDOG_NOTICE);
+    }
+  }
+}

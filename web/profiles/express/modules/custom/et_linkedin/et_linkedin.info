@@ -1,0 +1,7 @@
+name = Embed Templates - LinkedIn
+description = Provide a form and template that allows LinkedIn Insight Tags to be displayed on your site.
+core = 7.x
+package = Embed Templates
+
+dependencies[] = embed_templates
+dependencies[] = et_page_top_bottom

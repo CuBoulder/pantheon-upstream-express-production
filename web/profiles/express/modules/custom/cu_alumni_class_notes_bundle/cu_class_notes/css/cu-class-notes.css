@@ -1,0 +1,17 @@
+.class-note-single p:last-child { margin-bottom: 0; }
+
+.class-note-year a:link, .class-note-year a:visited { font-size: 200%; font-weight: 700; color: #959595; margin-bottom: 10px; }
+
+.class-note-year a:hover, .class-note-year a:focus { color: #333; }
+
+.container-inline .classnotes-view-all { font-size: 85%; display: block; }
+
+.classnotes-filter label, .classnotes-sort label, .classnotes-markup { font-size: 85%; font-weight: 600; }
+
+.class-note-posted-date { font-size: 75%; }
+
+.class-note-single a.edit-link { float: right; }
+
+#cu-class-notes-filter-form .fieldset-wrapper { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; }
+#cu-class-notes-filter-form .fieldset-wrapper > * { padding: 5px; }
+@media screen and (min-width: 960px) { #cu-class-notes-filter-form .fieldset-wrapper .classnotes-view-all { flex-grow: 1; text-align: right; } }

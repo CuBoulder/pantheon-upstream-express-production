@@ -1,0 +1,10 @@
+.campus-news-more-link { clear: both; text-align: right; }
+
+.campus-news-grid { overflow: hidden; }
+.campus-news-grid .col-lg-6:nth-child(2n+1), .campus-news-grid .col-lg-4:nth-child(3n+1), .campus-news-grid .col-lg-3:nth-child(4n+1), .campus-news-grid .col-lg-5c:nth-child(5n+1) { clear: left; }
+
+.campus-news-grid-more-link { padding: 0 20px; text-align: center; }
+
+.campus-news-feature .campus-news-more-link { padding: 0 20px; text-align: center; }
+
+.bundle-type-campus-news h2:before { content: "\f19c"; }

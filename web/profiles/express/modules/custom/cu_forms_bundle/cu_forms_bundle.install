@@ -1,0 +1,138 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for the cu_forms_bundle module.
+ */
+
+/**
+ * Implements hook_enable()
+ */
+function cu_forms_bundle_enable() {
+  // Add form manager role to user invite.
+  secure_permissions_build_roles();
+  $campaign_manager_role = user_role_load_by_name('form_manager');
+
+  $invite_roles = variable_get('user_external_invite_addon_roles', array());
+  $invite_roles[] = $campaign_manager_role->rid;
+
+  variable_set('user_external_invite_addon_roles', $invite_roles);
+}
+
+/**
+ * Express 2.8.5 update
+ * Add schema version to diff bundles.
+ */
+function cu_forms_bundle_update_7001() {
+  // This space intentionally left blank.
+}
+
+/**
+ * Update permissions for new form owner role.
+ */
+function cu_forms_bundle_update_7002() {
+  secure_permissions_rebuild();
+  cu_core_revert_features();
+}
+
+/**
+ * Update permissions for new form owner role.
+ */
+function cu_forms_bundle_update_7003() {
+  db_update('system')
+    ->fields(array('weight' => 10))
+    ->condition('name', 'cu_forms_bundle', '=')
+    ->execute();
+}
+
+/**
+ * Update permissions for site_editor, edit_only roles.
+ */
+function cu_forms_bundle_update_7004() {
+  secure_permissions_rebuild();
+}
+
+/**
+ * Add form manager role to user invite.
+ */
+function cu_forms_bundle_update_7005() {
+  // Add form manager role to user invite.
+  secure_permissions_build_roles();
+  $campaign_manager_role = user_role_load_by_name('form_manager');
+
+  $invite_roles = variable_get('user_external_invite_addon_roles', array());
+  $invite_roles[] = $campaign_manager_role->rid;
+
+  variable_set('user_external_invite_addon_roles', $invite_roles);
+}
+
+/**
+ * Update permissions for form manager role.
+ */
+function cu_forms_bundle_update_7006() {
+  secure_permissions_rebuild();
+  $fm_role = user_role_load_by_name("form_manager");
+  $uids = db_query("SELECT DISTINCT uid FROM {node} n WHERE n.type = 'webform'")->fetchCol();
+
+  foreach ($uids as $uid) {
+    $user = user_load($uid);
+    if (isset($user->uid) && $user->uid) {
+      if (!in_array('developer', array_values($user->roles)) && !in_array('administrator', array_values($user->roles)) && !in_array('site_owner', array_values($user->roles))) {
+        user_multiple_role_edit(array($uid), 'add_role', $fm_role->rid);
+        watchdog('cu_forms_bundle', ':user has been given the form manager role.', [':user' => $user->name]);
+      }
+    }
+  }
+}
+
+/**
+ * Enable cu_unused_forms.
+ */
+function cu_forms_bundle_update_7007() {
+  module_enable(array('cu_unused_forms'));
+}
+
+/**
+ * Updating site and web emails to prepare for new infrastructure smtp configuration
+ */
+function cu_forms_bundle_update_7008() {
+  variable_set('webform_default_from_address', 'webexpress_noreply@colorado.edu');
+  variable_set('site_mail', 'webexpress_noreply@colorado.edu');
+}
+
+/**
+ * Remove single-page webform progress bar for Webform 4.18 update.
+ */
+function cu_forms_bundle_update_7009() {
+  // See https://www.drupal.org/project/webform/releases/7.x-4.18
+  $multipage_webform_nids = db_select('webform_component');
+  $multipage_webform_nids->distinct();
+  $multipage_webform_nids->addField('webform_component', 'nid');
+  $multipage_webform_nids->condition('type', 'pagebreak');
+
+  // Remove confirmation page from the progress bar for single-page Webforms.
+  $updated_count = db_update('webform')
+      ->fields(array('progressbar_include_confirmation' => 0))
+    ->condition('preview', 0)
+    ->condition('nid', $multipage_webform_nids, 'NOT IN')
+    ->execute();
+
+  watchdog('cu_forms_bundle', t("Disabled progress bar for @count single-page webforms.", array('@count' => $updated_count)));
+}
+
+/**
+ * Implements hook_disable().
+ */
+function cu_forms_bundle_disable() {
+  $addOnRoleIds = variable_get('user_external_invite_addon_roles', []);
+  $adjustedAddOnRoleIds = [];
+
+  foreach ($addOnRoleIds as $rid) {
+    $role = user_role_load($rid)->name;
+    if (isset($role) && $role != 'form_manager') {
+      $adjustedAddOnRoleIds[] = $rid;
+    }
+  }
+
+  variable_set('user_external_invite_addon_roles', $adjustedAddOnRoleIds);
+}

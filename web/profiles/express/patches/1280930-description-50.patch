@@ -1,0 +1,12 @@
+diff --git a/simplesamlphp_auth.admin.inc b/simplesamlphp_auth.admin.inc
+index e6d83ac..ad6227b 100644
+--- a/simplesamlphp_auth.admin.inc
++++ b/simplesamlphp_auth.admin.inc
+@@ -180,6 +180,7 @@ function simplesamlphp_auth_settings_sync() {
+     '#type' => 'checkbox',
+     '#title' => t('Automatically enable SAML authentication for existing users upon successful login'),
+     '#default_value' => variable_get('simplesamlphp_auth_autoenablesaml', 0),
++    '#description' => t('Upon federated login, check if a local, pre-existing Drupal user is present with a username equal to the SAML authname. If so, enable SAML authentication for this existing user.<br />WARNING: make sure there is an actual link between the SAML authname and pre-existing Drupal user names, otherwise the Drupal user could be taken over by someone else authenticating with a SAML authname that happens to be the same.<br />NOTE: When enabled, the pre-existing user can be modified (e.g. get other username, email address, roles, ... based on SAML attributes).'),
+   );
+ 
+   return system_settings_form($form);

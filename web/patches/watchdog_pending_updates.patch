@@ -1,0 +1,24 @@
+diff --git a/modules/system/system.install b/modules/system/system.install
+index d5e6743..3d51039 100644
+--- a/modules/system/system.install
++++ b/modules/system/system.install
+@@ -415,10 +415,18 @@ function system_requirements($phase) {
+       if ($updates !== FALSE) {
+         $default = drupal_get_installed_schema_version($module);
+         if (max($updates) > $default) {
++          watchdog(
++            'pending_updates',
++            '%module schema version - %current - Available updates - %available',
++            array(
++              '%available' => implode(', ', $updates),
++              '%current' => (string)$default,
++              '%module' => $module
++            )
++          );
+           $requirements['update']['severity'] = REQUIREMENT_ERROR;
+           $requirements['update']['value'] = $t('Out of date');
+           $requirements['update']['description'] = $t('Some modules have database schema updates to install. You should run the <a href="@update">database update script</a> immediately.', array('@update' => base_path() . 'update.php'));
+-          break;
+         }
+       }
+     }

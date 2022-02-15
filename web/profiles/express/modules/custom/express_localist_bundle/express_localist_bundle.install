@@ -1,0 +1,43 @@
+<?php
+
+/**
+* Implements hook_schema().
+*/
+function express_localist_bundle_schema() {
+  $schema = array();
+  $schema['express_localist_bundle'] = drupal_get_schema_unprocessed('system', 'cache');
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ *
+ * Set default url, and filters.
+ */
+function express_localist_bundle_install() {
+  variable_set('express_localist_url', 'https://calendar.colorado.edu');
+  variable_set('express_localist_filters', array(
+    'event_types' => 'event_types',
+    'event_target_audience' => 'event_target_audience',
+    'event_college_school_unit' => 'event_college_school_unit',
+    'event_academic_calendar' => 'event_academic_calendar',
+    'event_interests' => 'event_interests',
+    'event_faculty_staff_calendar' => 'event_faculty_staff_calendar',
+  ));
+}
+
+/**
+ * Implements hook_update().
+ *
+ * Update available filters.
+ */
+function express_localist_bundle_update_7001() {
+  variable_set('express_localist_filters', array(
+    'event_types' => 'event_types',
+    'event_target_audience' => 'event_target_audience',
+    'event_college_school_unit' => 'event_college_school_unit',
+    'event_academic_calendar' => 'event_academic_calendar',
+    'event_interests' => 'event_interests',
+    'event_faculty_staff_calendar' => 'event_faculty_staff_calendar',
+  ));
+}

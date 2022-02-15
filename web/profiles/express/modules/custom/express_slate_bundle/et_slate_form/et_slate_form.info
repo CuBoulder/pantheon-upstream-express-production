@@ -1,0 +1,15 @@
+name = Embed Templates - Slate Form Base
+description = Provide a form and template that allows Slate forms to be placed on your site.
+core = 7.x
+package = Embed Templates
+
+dependencies[] = embed_templates
+
+
+
+; Information added by Drupal.org packaging script on 2017-05-24
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "et_slate_form"
+datestamp = "1495663091"
+

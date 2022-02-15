@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Drupal install hooks.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function express_site_metrics_install() {
+  variable_set('express_site_metrics_users', ['Prometheus']);
+}

@@ -1,0 +1,46 @@
+<?php
+
+/**
+ * @file
+ * Drupal hooks for et_slate_form module.
+ */
+
+/**
+ * Callback to generate form components for Slate Form embed type.
+ *
+ * @param array $form
+ *   Form containing default embed template form options.
+ * @param array $form_state
+ *   State of the default embed template form.
+ * @param int|null $id
+ *   ID of the current embed being edited if that embed exists.
+ * @param array $data
+ *   Data of the current embed if it is being edited.
+ */
+function et_slate_form_options(&$form, &$form_state, $id = NULL, $data = array()) {
+
+  // No block or bean will need to have a path.
+  $form['embed']['path']['#access'] = FALSE;
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Embed Data'),
+    '#weight' => -10,
+  );
+
+  $form['options']['slate_domain'] = array(
+    '#title' => t('Slate Domain'),
+    '#description' => t('The custom sub-domain of the Slate account.'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['slate_domain']) ? $data['slate_domain'] : variable_get('et_slate_form_slate_domain', ''),
+    '#required' => TRUE,
+  );
+
+  $form['options']['account_id'] = array(
+    '#title' => t('Form ID'),
+    '#description' => t('The ID of the Slate form.'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['account_id']) ? $data['account_id'] : '',
+    '#required' => TRUE,
+  );
+}

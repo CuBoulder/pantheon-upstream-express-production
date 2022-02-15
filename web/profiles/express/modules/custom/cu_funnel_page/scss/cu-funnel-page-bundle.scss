@@ -1,0 +1,11 @@
+.cu-funnel-page {
+  #sticky-menu,
+  #navigation-wrapper,
+  .breadcrumb-wrapper,
+  #footer-menu-wrapper,
+  .region-search-box > *,
+  .mobile-menu-toggle,
+  .search-toggle {
+    display: none !important;
+  }
+}

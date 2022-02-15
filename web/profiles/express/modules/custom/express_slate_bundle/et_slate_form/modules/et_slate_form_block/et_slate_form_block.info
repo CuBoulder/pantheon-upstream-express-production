@@ -1,0 +1,15 @@
+name = Embed Templates - Slate Form Block
+description = Provide a block for placing Slate forms on your site.
+core = 7.x
+package = Embed Templates
+
+dependencies[] = embed_templates
+dependencies[] = et_slate_form
+dependencies[] = et_blocks
+
+; Information added by Drupal.org packaging script on 2017-05-24
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "et_slate_form"
+datestamp = "1495663091"
+

@@ -1,0 +1,99 @@
+<?php
+
+/**
+ * @file
+ * Installation and schema hooks for the cu_js_includes module.
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * @return array
+ *   An array of schemas to be added to the database.
+ */
+function cu_js_includes_schema() {
+  $schema = array();
+
+  $schema['cu_js_includes'] = array(
+    'description' => 'The base table for the include entity.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key of the include entity.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'The user who created the include.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'name' => array(
+        'description' => 'Human readable name of the include.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'renderer' => array(
+        'description' => 'What to use to render the template.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'Pre-defined type of include.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'created' => array(
+        'type' => 'int',
+        'description' => 'Timestamp when the include was created.',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'type' => 'int',
+        'description' => 'Timestamp when the include was last updated.',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'description' => 'Custom options for include.',
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ *
+ * Enable include types.
+ */
+function cu_js_includes_install() {
+  $types = array(
+    'admithub' => 'admithub',
+    'livechat' => 'livechat',
+    'slateform' => 'slateform',
+    'statuspage' => 'statuspage'
+  );
+  variable_set('cu_js_includes_enabled', $types);
+  // Menu items are already added so we need to rebuild if types are changed.
+  menu_rebuild();
+}
+
+
+/**
+ * Update Secure Permissions.
+ */
+function cu_js_includes_update_7001() {
+  secure_permissions_rebuild();
+}

@@ -1,0 +1,793 @@
+<?php
+/**
+ * @file
+ * Code for the Express Localist Bundle feature.
+ */
+
+include_once 'express_localist_bundle.features.inc';
+
+function express_localist_bundle_menu() {
+  $items = array();
+  $items['admin/config/system/express-localist'] = array(
+    'title' => 'Express Localist Configuration',
+    'description' => 'Set localist url and available filters.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('express_localist_bundle_config_form'),
+    'access arguments' => array('administer localist settings'),
+    'file' => 'express_localist_bundle.admin.inc',
+  );
+  return $items;
+}
+
+function express_localist_bundle_theme_registry_alter(&$theme_registry) {
+  $module_path = drupal_get_path('module', 'express_localist_bundle');
+  $theme_registry_copy = $theme_registry;
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'bean', $module_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+  $hooks = array('bean');
+  foreach ($hooks as $h) {
+	  if (isset($theme_registry[$h]['theme paths'])) {
+	    $first_element = array_shift($theme_registry[$h]['theme paths']);
+	    array_unshift($theme_registry[$h]['theme paths'], array_shift($theme_registry[$h]['theme paths']), $module_path);
+  	}
+  }
+}
+
+/**
+* Implements hook_flush_caches().
+*/
+function express_localist_bundle_flush_caches() {
+  return array('express_localist_bundle');
+}
+
+/**
+ * Get cached options.
+ */
+function express_localist_bundle_api_cache_get($key) {
+  $cid = 'express_localist_bundle:' . $key;
+  // If this request was cached, return the cached value
+  if ($cache = cache_get($cid, 'express_localist_bundle')) {
+    return $cache->data;
+  }
+  return FALSE;
+}
+
+/**
+ * Save options to cache.
+ */
+function express_localist_bundle_api_cache_save($key, $value) {
+  $cid = 'express_localist_bundle:' . $key;
+  cache_set($cid, $value, 'express_localist_bundle', 3600);
+}
+
+/**
+ * Set error message if localist is not configured.
+ */
+function express_localist_must_configure() {
+  drupal_set_message(t('The Localist URL has not been !configured.', array('!configured' => l('configured', 'admin/config/system/express-localist'))), 'error', FALSE);
+}
+
+/**
+ * Provide places options to form.
+ */
+function express_localist_bundle_places_options() {
+  // Check to see if API has been disabled.
+  if (express_localist_bundle_api_disable()) {
+    return array();
+  }
+
+  $options = array();
+  $end_point = variable_get('express_localist_url', NULL);
+  if (!$end_point) {
+    express_localist_must_configure();
+    return array();
+  }
+  else {
+    $end_point .= '/api/2/places?pp=100';
+  }
+  // Get cached options
+  if ($cache = express_localist_bundle_api_cache_get($end_point)) {
+    $terms = $cache;
+  }
+  else {
+    $response = drupal_http_request($end_point);
+    if ($response->code == '200') {
+      // API results are paginated, we need to figure out
+      // how many pages we need to get first.
+      $response = drupal_json_decode($response->data, true);
+      // Total pages, 100 per page.
+      $pages = $response['page']['total'];
+      $terms['places'] = array();
+      // Loop through pages and add to array.
+      for ($i = 1; $i < ($pages + 1); $i++) {
+        $response = drupal_http_request($end_point . '&page=' . $i);
+        $response = drupal_json_decode($response->data, true);
+        $terms['places'] = array_merge($terms['places'],$response['places']);
+      }
+      // Save to cache
+      express_localist_bundle_api_cache_save($end_point, $terms);
+    }
+  }
+  $options = array();
+  foreach ($terms['places'] as $term) {
+    $value = $term['place']['urlname'];
+    $display = $term['place']['display_name'];
+    $options[$value] = $display;
+  }
+  asort($options);
+  return $options;
+}
+
+/**
+ * Localist minical field options.
+ */
+function express_localist_bundle_minical_layout_options() {
+  $options = array(
+    'vertical' => 'Vertical',
+    'horizontal' => 'Horizontal',
+  );
+
+  return $options;
+}
+
+/**
+ * Provide options for group field.
+ */
+function express_localist_bundle_group_options() {
+  // Check to see if API has been disabled.
+  if (express_localist_bundle_api_disable()) {
+    return array();
+  }
+
+  $groups = array();
+  $end_point = variable_get('express_localist_url', NULL);
+  if (!$end_point) {
+    express_localist_must_configure();
+    return array();
+  }
+  else {
+    $end_point .= '/api/2/groups?pp=100';
+  }
+
+  // Get cached options
+  if ($cache = express_localist_bundle_api_cache_get($end_point)) {
+    $terms = $cache;
+  }
+  else {
+    $response = drupal_http_request($end_point);
+    if ($response->code == '200') {
+      // API results are paginated, we need to figure out
+      // how many pages we need to get first.
+      $response = drupal_json_decode($response->data, true);
+      // Total pages, 100 per page.
+      $pages = $response['page']['total'];
+
+      $terms['groups'] = array();
+      // Loop through pages and add to array.
+      for ($i = 1; $i < ($pages + 1); $i++) {
+        $response = drupal_http_request($end_point . '&page=' . $i);
+        $response = drupal_json_decode($response->data, true);
+        $terms['groups'] = array_merge($terms['groups'],$response['groups']);
+      }
+      // Save to cache.
+      express_localist_bundle_api_cache_save($end_point, $terms);
+    }
+  }
+  foreach ($terms['groups'] as $group) {
+    $id = $group['group']['urlname'];
+    $name = $group['group']['name'];
+    $groups[$id] = $name;
+  }
+  asort($groups);
+  return $groups;
+}
+
+/**
+ * Get filter options.
+ */
+function express_localist_bundle_get_filter_options() {
+  // Check to see if API has been disabled.
+  if (express_localist_bundle_api_disable()) {
+    return array();
+  }
+
+  $options = array();
+  $end_point = variable_get('express_localist_url', NULL);
+  if (!$end_point) {
+    express_localist_must_configure();
+    return array();
+  }
+  else {
+    $end_point .= '/api/2/events/filters';
+  }
+
+  // Get cached options
+  if ($cache = express_localist_bundle_api_cache_get($end_point)) {
+    $filters = $cache;
+  }
+  else {
+    $response = drupal_http_request($end_point);
+    if ($response->code == '200') {
+      $options = array();
+      $filters = drupal_json_decode($response->data, true);
+      express_localist_bundle_api_cache_save($end_point, $filters);
+    }
+  }
+
+  $available_filters = variable_get('express_localist_filters', array());
+  // Loop through api filters
+  foreach ($filters as $key => $filter) {
+    // Check to see which filters are set to be exposed
+    if (!empty($available_filters[$key]) && $available_filters[$key] == $key) {
+      $options[$key] = $filter;
+    }
+  }
+
+  return $options;
+}
+
+/**
+ * Match content options.
+ */
+function express_localist_bundle_content_match_options() {
+  $options = array(
+    'any' => 'Any place, group, keyword, tag, or filter item',
+    'default' => 'At least one place, group, keyword or tag, and one filter item',
+    'or' => 'Any place or group, and at least one keyword or tag, and one filter item',
+    'all' => 'At least one place and group, and all keywords, tags, and filter items',
+  );
+
+  return $options;
+}
+
+/**
+ * WIdget type options.
+ */
+function express_localist_bundle_widget_options() {
+  $options = array(
+    'view' => 'List',
+    'combo' => 'Mini Grid + List',
+  );
+
+  return $options;
+}
+
+/**
+ * Widget style options.
+ */
+function express_localist_bundle_style_options() {
+  $options = array(
+    'modern' => 'Modern',
+    'card' => 'Card',
+    'classic' => 'Classic',
+    'express-template-1' => 'Template 1',
+    'express-template-2' => 'Template 2',
+    'express-template-3' => 'Template 3',
+    'express-template-4' => 'Template 4',
+    'express-template-5' => 'Template 5',
+  );
+
+  return $options;
+}
+
+function _express_localist_bundle_tree(array $elements, $parentId = NULL) {
+  $branch = array();
+
+  foreach ($elements as $element) {
+    if ($element['parent_id'] == $parentId) {
+      $children = _express_localist_bundle_tree($elements, $element['id']);
+      if ($children) {
+        $element['children'] = $children;
+      }
+      $branch[] = $element;
+    }
+  }
+  return $branch;
+}
+
+function _express_localist_bundle_tree_options($tree, $depth = 0) {
+  if (!is_array($tree)) {
+    return false;
+  }
+  $result = array();
+  foreach ($tree as $key => $value) {
+    $id = $value['id'];
+    $indent = '';
+    for ($i = 0; $i < $depth; $i++) {
+      $indent .= '-';
+    }
+    $name = $indent . ' ' . $value['name'];
+    $result[$id] = $name;
+    if (!empty($value['children'])) {
+      $indent = $depth +1;
+      $children = _express_localist_bundle_tree_options($value['children'], $indent);
+      $result = $result + $children;
+    }
+  }
+  return $result;
+}
+
+function express_localist_bundle_preprocess_entity(&$vars) {
+  $entity_type = $vars['elements']['#entity_type'];
+  $bundle = $vars['elements']['#bundle'];
+
+  // Only preprocess block row beans.
+  if ($entity_type == 'bean' && $bundle == 'localist_events') {
+    $end_point = variable_get('express_localist_url', NULL);
+    $end_point = str_replace('http://', '//', $end_point);
+    $values = array();
+    $values['schools'] = 'ucboulder';
+    $values['num'] = $vars['field_localist_results'][0]['value'];
+    $values['days'] = $vars['field_localist_days_ahead'][0]['value'];
+
+    $values['picks'] = $vars['field_localist_show_featured'][0]['value'];
+    $values['sponsored'] = $vars['field_localist_show_sponsored'][0]['value'];
+    $values['match'] = $vars['field_localist_content_match'][0]['value'];
+    $values['hide_past'] = $vars['field_localist_hide_past_events'][0]['value'];
+    $values['hidedesc'] = $vars['field_localist_hide_descriptions'][0]['value'];
+    $values['expand_descriptions'] = $vars['field_localist_truncate_desc'][0]['value'];
+    $values['html_descriptions'] = $vars['field_localist_render_html'][0]['value'];
+    $values['hideimage'] = $vars['field_localist_hide_images'][0]['value'];
+    $values['show_times'] = $vars['field_localist_hide_times'][0]['value'];
+    $values['target_blank'] = $vars['field_localist_new_window'][0]['value'];
+    $values['skip_recurring'] = $vars['field_localist_skip_recurring'][0]['value'];
+    $values['all_instances'] = $vars['field_localist_all_instances'][0]['value'];
+    $values['template'] = $vars['field_localist_style'][0]['value'];
+
+    // Places
+    $places = array();
+    if (!empty($vars['field_localist_places'])) {
+      foreach ($vars['field_localist_places'] as $place) {
+        $places[] = $place['value'];
+      }
+    }
+    $values['venues'] = !empty($vars['field_localist_places']) ? join(',', $places) : 0;
+
+    // Filters
+
+    $values['types'] = !empty($vars['field_localist_filters']) ? $vars['field_localist_filters'][0]['value'] : 0;
+    $values['exclude_types'] = !empty($vars['field_localist_filters_excluded']) ? $vars['field_localist_filters_excluded'][0]['value'] : 0;
+
+    // Combine groups
+    $groups = array();
+    if (!empty($vars['field_localist_groups'])) {
+      foreach ($vars['field_localist_groups'] as $group) {
+        $groups[] = $group['value'];
+      }
+    }
+    $values['groups'] = !empty($vars['field_localist_groups']) ? join(',', $groups) : 0;
+    $values['tags'] = !empty($vars['field_localist_tags']) ? $vars['field_localist_tags'][0]['value'] : 0;
+
+    // Start Date
+    if (!empty($vars['field_localist_start_date'])) {
+      $start_date = strtotime($vars['field_localist_start_date'][0]['value']);
+      $start_date = date('Y-m-d', $start_date);
+      $values['start'] = $start_date;
+    }
+
+    // Mini Calendar Layout
+    $layout = !empty($vars['field_localist_minical_layout']) ? $vars['field_localist_minical_layout'][0]['value'] : '';
+    $type = $vars['field_localist_widget_type'][0]['value'];
+    $localist_classes = array();
+    $localist_classes[] = 'localist-' . $type;
+    $localist_classes[] = 'localist-layout-' . $layout;
+
+
+    $configs = array();
+    foreach ($values as $key => $value) {
+      // Special rules for configs come first.
+      //
+      // Show Times is a backwards value.
+      // Widget option is 'Hide Times' - added only if = 0.
+      if ($key == 'show_times' && $value == 1) {
+        $configs[] = $key . '=0';
+      }
+      // If classic template is chosen, value should not be added.
+      elseif ($key == 'template' && $value == 'classic') {
+        //$configs[] = $key . '=' . $value;
+      }
+      elseif (is_numeric($value) && $value != 0) {
+        $configs[] = $key . '=' . $value;
+      }
+      elseif (!is_numeric($value)) {
+        $configs[] = $key . '=' . $value;
+      }
+    }
+    // Don't show the types select menu - EVER!
+    $configs[] = 'show_types=0';
+
+    // Remove link if title was not enterd/title==url
+    if (!empty($vars['content']['field_localist_link'])) {
+      if ($vars['content']['field_localist_link']['#items'][0]['title'] == $vars['content']['field_localist_link']['#items'][0]['url']) {
+        unset($vars['content']['field_localist_link']);
+      }
+    }
+
+    // Add a unique value to prevent displaying the localist cached version.
+    $configs[] = 'express-cc=' . $vars['bean']->changed;
+
+    $vars['localist_classes'] = join(' ', $localist_classes);
+    $vars['widget_url'] = $end_point . '/widget/' . $type . '?' . join('&', $configs);
+    $vars['widget_configs'] = $configs;
+
+    drupal_add_js(drupal_get_path('module', 'express_localist_bundle') . '/js/switch_event_url.js');
+  }
+}
+
+/**
+ * Implements hook_form_FORMID_alter.
+ *
+ * Add States to localist_events form.
+ */
+function express_localist_bundle_form_bean_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['bean']['#value']->type == 'localist_events') {
+
+    // Check to see if API has been disabled.
+    if (express_localist_bundle_api_disable()) {
+      drupal_set_message('Localist events are unavailable', 'warning');
+    }
+
+    // Check to see if Localist url is configured.
+    $end_point = variable_get('express_localist_url', NULL);
+    if (!$end_point) {
+      express_localist_must_configure();
+    }
+
+    // Add default link url
+    //$form['field_localist_link'][LANGUAGE_NONE][0]['#default_value']['url'] = $end_point;
+
+    // Delete start date default value if this is a new bean.
+    if ($form['bean']['#value']->bid == NULL) {
+      unset($form['field_localist_start_date'][LANGUAGE_NONE][0]['#default_value']['value']);
+      unset($form['field_localist_start_date'][LANGUAGE_NONE][0]['#default_value']['value2']);
+    }
+
+    // Only show mini calendar layout if widget type is combo
+    $form['field_localist_minical_layout']['#states'] = array(
+      'visible' => array(
+        ':input[name="field_localist_widget_type[und]"]' => array('value' => 'combo'),
+      ),
+    );
+
+    // Hide filter text fields
+    $form['field_localist_filters']['#access'] = FALSE;
+    $form['field_localist_filters_excluded']['#access'] = FALSE;
+
+    // Get filter values as an array.
+    $saved_options = array();
+
+    $saved_filters = explode(',', $form['field_localist_filters'][LANGUAGE_NONE][0]['value']['#default_value']);
+    // Build array of keys.
+    foreach ($saved_filters as $filter) {
+      $saved_options['included'][$filter] = $filter;
+    }
+    $saved_filters = explode(',', $form['field_localist_filters_excluded'][LANGUAGE_NONE][0]['value']['#default_value']);
+    // Build array of keys.
+    foreach ($saved_filters as $filter) {
+      $saved_options['excluded'][$filter] = $filter;
+    }
+
+    // Add values from API
+
+    $form['field_localist_groups'][LANGUAGE_NONE]['#options'] = express_localist_bundle_group_options();
+    // Group values don't seem to get the default value set.
+    $saved_group_values = array();
+    foreach ($form['field_localist_groups'][LANGUAGE_NONE]['#entity']->field_localist_groups[LANGUAGE_NONE] as $value) {
+      $saved_group_values[] = $value['value'];
+    }
+    $form['field_localist_groups'][LANGUAGE_NONE]['#default_value'] = $saved_group_values;
+
+
+    $form['field_localist_places'][LANGUAGE_NONE]['#options'] = express_localist_bundle_places_options();
+    // Place values don't seem to get the default value set.
+    $saved_place_values = array();
+    foreach ($form['field_localist_places'][LANGUAGE_NONE]['#entity']->field_localist_places[LANGUAGE_NONE] as $value) {
+      $saved_place_values[] = $value['value'];
+    }
+    $form['field_localist_places'][LANGUAGE_NONE]['#default_value'] = $saved_place_values;
+
+
+    // Get filter options.
+    $filters = express_localist_bundle_get_filter_options();
+    // Sort filters alphabetically.
+    ksort($filters);
+    foreach ($filters as $key => $filter) {
+      $options = array();
+      // Sort everything alphabetically
+      usort($filter, function($a, $b) {
+        return strcmp($a['name'], $b['name']);
+      });
+      // Build tree
+      $tree = _express_localist_bundle_tree($filter);
+      $options = _express_localist_bundle_tree_options($tree);
+      // Make fieldset.
+      $form['fieldset_' . $key] = array(
+        '#type' => 'fieldset',
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        '#title' => 'Filter by ' . ucfirst(substr(str_replace('_', ' ', $key), 6)),
+      );
+      // Make form element.
+      $form['fieldset_' . $key][$key] = array(
+        '#type' => 'checkboxes',
+        '#title' => ucfirst(substr(str_replace('_', ' ', $key), 6)),
+        '#options' => $options,
+        '#default_value' => $saved_options['included'],
+      );
+      // Make fieldset.
+      $form['fieldset_' . $key . '_excluded'] = array(
+        '#type' => 'fieldset',
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        '#title' => 'Exclude by ' . ucfirst(substr(str_replace('_', ' ', $key), 6)),
+      );
+      // Make form element.
+      $form['fieldset_' . $key . '_excluded'][$key . '_excluded'] = array(
+        '#type' => 'checkboxes',
+        '#title' => ucfirst(substr(str_replace('_', ' ', $key), 6)),
+        '#options' => $options,
+        '#default_value' => $saved_options['excluded'],
+      );
+      // Add form element to filter field group.
+      $form['#group_children']['fieldset_' . $key] = 'group_localist_filters';
+      $form['#group_children']['fieldset_' . $key . '_excluded'] = 'group_localist_excluded';
+    }
+    // Add submit function to take filter options and save them.
+    $form['#submit'][] = 'express_localist_bundle_save_filters';
+  }
+
+}
+/**
+ * Implements hook_inline_entity_form_entity_form_alter.
+ *
+ * Add States to localist_events form when used in inline entity form.
+ */
+function express_localist_bundle_inline_entity_form_entity_form_alter(&$entity_form, &$form_state) {
+  if ($entity_form['#entity']->type == 'localist_events') {
+
+    // Check to see if API has been disabled.
+    if (express_localist_bundle_api_disable()) {
+      drupal_set_message('Localist events are unavailable', 'warning');
+    }
+
+    // Check to see if Localist url is configured.
+    $end_point = variable_get('express_localist_url', NULL);
+    if (!$end_point) {
+      express_localist_must_configure();
+    }
+
+    // Add default link url
+    //$entity_form['field_localist_link'][LANGUAGE_NONE][0]['#default_value']['url'] = $end_point;
+
+    // Delete start date default value if this is a new bean.
+    if ($entity_form['#entity']->bid == NULL) {
+      unset($entity_form['field_localist_start_date'][LANGUAGE_NONE][0]['#default_value']['value']);
+      unset($entity_form['field_localist_start_date'][LANGUAGE_NONE][0]['#default_value']['value2']);
+    }
+
+    // Only show mini calendar layout if widget type is combo
+    $entity_form['field_localist_minical_layout']['#states'] = array(
+      'visible' => array(
+        '.field-name-field-localist-widget-type :input' => array('value' => 'combo'),
+      ),
+    );
+
+    // Hide filter text fields
+    $entity_form['field_localist_filters']['#access'] = FALSE;
+    $entity_form['field_localist_filters_excluded']['#access'] = FALSE;
+
+    // Add values from API
+    $entity_form['field_localist_groups'][LANGUAGE_NONE]['#options'] = express_localist_bundle_group_options();
+    $entity_form['field_localist_places'][LANGUAGE_NONE]['#options'] = express_localist_bundle_places_options();
+
+
+
+    // Group values don't seem to get the default value set.
+    $saved_group_values = array();
+    foreach ($entity_form['field_localist_groups'][LANGUAGE_NONE]['#entity']->field_localist_groups[LANGUAGE_NONE] as $value) {
+      $saved_group_values[] = $value['value'];
+    }
+    $entity_form['field_localist_groups'][LANGUAGE_NONE]['#default_value'] = $saved_group_values;
+
+    // Place values don't seem to get the default value set.
+    $saved_place_values = array();
+    foreach ($entity_form['field_localist_places'][LANGUAGE_NONE]['#entity']->field_localist_places[LANGUAGE_NONE] as $value) {
+      $saved_place_values[] = $value['value'];
+    }
+    $entity_form['field_localist_places'][LANGUAGE_NONE]['#default_value'] = $saved_place_values;
+
+    // Get filter values as an array.
+    $saved_options = array();
+
+    $saved_filters = explode(',', $entity_form['field_localist_filters'][LANGUAGE_NONE][0]['value']['#default_value']);
+    // Build array of keys.
+    foreach ($saved_filters as $filter) {
+      $saved_options['included'][$filter] = $filter;
+    }
+
+    $saved_filters = explode(',', $entity_form['field_localist_filters_excluded'][LANGUAGE_NONE][0]['value']['#default_value']);
+    // Build array of keys.
+    foreach ($saved_filters as $filter) {
+      $saved_options['excluded'][$filter] = $filter;
+    }
+
+    // Get filter options.
+    $filters = express_localist_bundle_get_filter_options();
+    foreach ($filters as $key => $filter) {
+      $options = array();
+      // Sort everything alphabetically
+      usort($filter, function($a, $b) {
+        return strcmp($a['name'], $b['name']);
+      });
+      // Build tree
+      $tree = _express_localist_bundle_tree($filter);
+      $options = _express_localist_bundle_tree_options($tree);
+      // Make fieldset.
+      $entity_form['fieldset_' . $key] = array(
+        '#type' => 'fieldset',
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        '#title' => 'Filter by ' . ucfirst(substr(str_replace('_', ' ', $key), 6)),
+      );
+      // Make form element.
+      $entity_form['fieldset_' . $key][$key] = array(
+        '#type' => 'checkboxes',
+        '#title' => ucfirst(substr(str_replace('_', ' ', $key), 6)),
+        '#options' => $options,
+        '#default_value' => $saved_options['included'],
+      );
+      // Make fieldset.
+      $entity_form['fieldset_' . $key . '_excluded'] = array(
+        '#type' => 'fieldset',
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        '#title' => 'Exclude by ' . ucfirst(substr(str_replace('_', ' ', $key), 6)),
+      );
+      // Make form element.
+      $entity_form['fieldset_' . $key . '_excluded'][$key . '_excluded'] = array(
+        '#type' => 'checkboxes',
+        '#title' => ucfirst(substr(str_replace('_', ' ', $key), 6)),
+        '#options' => $options,
+        '#default_value' => $saved_options['excluded'],
+      );
+      // Add form element to filter field group.
+      $entity_form['#group_children']['fieldset_' . $key] = 'group_localist_filters';
+      $entity_form['#group_children']['fieldset_' . $key . '_excluded'] = 'group_localist_excluded';
+
+    }
+    // Add submit function to take filter options and save them.
+    $entity_form['#submit'][] = 'express_localist_bundle_save_filters';
+  }
+}
+
+/**
+ * Save values from the various filter fields to field_localist_filters.
+ */
+function express_localist_bundle_save_filters(&$form, &$form_state) {
+  $filters = variable_get('express_localist_filters', array());
+  // Do included filters
+  $submitted = array();
+  foreach ($filters as $key => $filter) {
+    if ($key == $filter) {
+      if (!empty($form_state['values'][$key])) {
+        $new_values = array_filter($form_state['values'][$key]);
+        if (!empty($new_values)) {
+          $submitted = $submitted + array_filter($form_state['values'][$key]);
+        }
+      }
+    }
+  }
+  $submitted = !empty($submitted) ? join(',', $submitted) : '';
+  $form_state['values']['field_localist_filters'][LANGUAGE_NONE][0]['value'] = $submitted;
+
+  // Do excluded filters
+  $submitted = array();
+  foreach ($filters as $key => $filter) {
+    if ($key == $filter) {
+      if (!empty($form_state['values'][$key . '_excluded'])) {
+        $new_values = array_filter($form_state['values'][$key . '_excluded']);
+        if (!empty($new_values)) {
+          $submitted = $submitted + array_filter($form_state['values'][$key . '_excluded']);
+        }
+      }
+    }
+  }
+  $submitted = !empty($submitted) ? join(',', $submitted) : '';
+  $form_state['values']['field_localist_filters_excluded'][LANGUAGE_NONE][0]['value'] = $submitted;
+}
+/**
+ * Implements hook_permission().
+ */
+function express_localist_bundle_permission() {
+  return array(
+    'administer localist settings' => array(
+      'title' => 'Administer Localist Settings',
+      'description' => 'Configure the settings for the Localist Calendar',
+    ),
+  );
+}
+
+/**
+ * Implements hook_secure_permissions().
+ *
+ */
+function express_localist_bundle_secure_permissions($role) {
+  $permissions = array(
+    'anonymous user' => array(
+      'view any localist_events bean',
+    ),
+    'authenticated user' => array(
+      'view any localist_events bean',
+    ),
+    'administrator' => array(
+      'create any localist_events bean',
+      'delete any localist_events bean',
+      'edit any localist_events bean',
+      'view any localist_events bean',
+    ),
+    'developer' => array(
+      'create any localist_events bean',
+      'delete any localist_events bean',
+      'edit any localist_events bean',
+      'view any localist_events bean',
+      'administer localist settings',
+    ),
+    'edit_my_content' => array(
+      'view any localist_events bean',
+    ),
+    'edit_only' => array(
+      'edit any localist_events bean',
+      'view any localist_events bean',
+    ),
+    'site_editor' => array(
+      'create any localist_events bean',
+      'delete any localist_events bean',
+      'edit any localist_events bean',
+      'view any localist_events bean',
+    ),
+    'site_owner' => array(
+      'create any localist_events bean',
+      'delete any localist_events bean',
+      'edit any localist_events bean',
+      'view any localist_events bean',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}
+
+function express_localist_bundle_form_express_block_designer_form_alter(&$form, &$form_state) {
+  if ($form['block_type']['#value'] == 'localist_events') {
+    //$form['block_designer_settings']['style']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_express_bean_list_groups().
+ * Provided by express_add_content.api.php.
+ */
+function express_localist_bundle_express_bean_list_groups($bundles) {
+
+  $bundles['events']['types'][] = 'Localist Events';
+
+  return $bundles;
+}
+
+function express_localist_bundle_init() {
+  $localist_bypass_urls = variable_get('localist_bypass_urls', array(
+    'cupresents.org',
+  ));
+  drupal_add_js(array('localist_bypass_urls' => $localist_bypass_urls), 'setting');
+}
+
+
+function express_localist_bundle_api_disable() {
+  if (variable_get('express_localist_bundle_api_disable', 0)) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}

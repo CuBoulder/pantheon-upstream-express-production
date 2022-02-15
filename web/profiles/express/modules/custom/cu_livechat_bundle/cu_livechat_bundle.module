@@ -1,0 +1,161 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+ function cu_livechat_bundle_menu() {
+   $items['admin/settings/livechat'] = array(
+     'title' => 'LiveChat',
+     'description' => 'Menu Options Related to LiveChat',
+     'position' => 'right',
+     'page callback' => 'system_admin_menu_block_page',
+     'access arguments' => array('administer express settings'),
+     'file' => 'system.admin.inc',
+     'file path' => drupal_get_path('module', 'system'),
+     'weight' => 1,
+   );
+   $items['admin/settings/livechat/configuration'] = array(
+     'title' => 'Livechat',
+     'description' => 'Configure the license for your Livechat license',
+     'type' => MENU_NORMAL_ITEM,
+     'page callback' => 'drupal_get_form',
+     'page arguments' => array('cu_livechat_bundle_admin_form'),
+     'access arguments' => array('administer express settings'),
+     'weight' => -50,
+   );
+
+   return $items;
+ }
+
+/**
+ * Preprocess html.
+ */
+function cu_livechat_bundle_preprocess_html(&$vars) {
+  if ($plugin = context_get_plugin('reaction', 'livechat')) {
+    $livechat = $plugin->execute($vars);
+    if ($livechat && ($livechat_license = variable_get('livechat_license_number', NULL))) {
+      $livechat = "var __lc = {}; __lc.license = " . $livechat_license . ";
+      (function() {
+        var lc = document.createElement('script'); lc.type = 'text/javascript'; lc.async = true;
+        lc.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'cdn.livechatinc.com/tracking.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(lc, s);
+      })();";
+
+      if (!path_is_admin(current_path())) {
+        drupal_add_js($livechat, 'inline');
+      }
+
+      // Keep livechat from displaying when printing.
+      drupal_add_css(
+        '#livechat-compact-container { display: none !important;}',
+        array(
+          'group' => CSS_THEME,
+          'type' => 'inline',
+          'media' => 'print',
+          'preprocess' => FALSE,
+          'weight' => '9999',
+        )
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * LiveChat config onto Settings form.
+ */
+function cu_livechat_bundle_admin_form() {
+  // Get content from .info file.
+  $info_file = DRUPAL_ROOT . '/' . drupal_get_path("module", "cu_livechat_bundle") . '/' . "cu_livechat_bundle.info";
+  $info = drupal_parse_info_file($info_file);
+  $form = array();
+  $licence_number = variable_get('livechat_licence_number', NULL);
+  $update_text = "{$info['description']} Please click the link below to get started.";
+  $linkOptions = array();
+
+  if ($licence_number) {
+    $update_text .= "</br></br>Your LiveChat Licence Number: $licence_number";
+    $linkOptions['query'] = ['LiveChatLicence' => $licence_number];
+  }
+
+  $form['message'] = [
+    'title' => [
+      '#type' => 'markup',
+      '#markup' => '<h3>' . t('Our LiveChat bundle is being deprecated.') . '</h3>',
+    ],
+    'message' => [
+      '#type' => 'markup',
+      '#markup' => '<p>' . t($update_text) . '</p>',
+    ],
+    'link' => [
+      '#type' => 'markup',
+      '#markup' => l(t('Create LiveChat JavaScript Include'), "admin/content/js-includes/add/livechat", $linkOptions)
+    ]
+  ];
+
+  return $form;
+}
+
+/**
+ * Validation handler for _cu_livechat_config_form.
+ */
+function _cu_livechat_bundle_config_form_validate($form, &$form_state) {
+  if (!is_numeric($form_state['values']['livechat_license_number']) || empty($form_state['values']['livechat_license_number'])) {
+    $error = t('The livechat license number must only contain numbers.');
+    form_set_error('livechat_license_number', $error);
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ *
+ * Notify CTools that we'll be using the plugin API with Context module.
+ */
+function cu_livechat_bundle_ctools_plugin_api($module, $api) {
+  if ($module == 'context' && ($api == 'plugins' || $api == 'context')) {
+    return array('version' => 3);
+  }
+}
+
+/**
+ * Implements hook_context_plugins().
+ *
+ * CTools plugin API hook for Context.
+ *
+ * @return array
+ *   Config details for each reaction.
+ *
+ * @see hook_context_plugins()
+ */
+function cu_livechat_bundle_context_plugins() {
+  $plugins = array();
+
+  $plugins['context_reaction_livechat'] = array(
+    'handler' => array(
+      'path' => drupal_get_path('module', 'cu_livechat_bundle') . '/plugins',
+      'file' => 'cu_livechat_bundle.inc',
+      'class' => 'context_reaction_livechat',
+      'parent' => 'context_reaction',
+    ),
+  );
+
+  return $plugins;
+}
+
+/**
+ * Implements hook_context_registry().
+ *
+ * Registry hook for conditions & reactions.
+ *
+ * @see hook_context_registry()
+ */
+function cu_livechat_bundle_context_registry() {
+  return array(
+    'reactions' => array(
+      'livechat' => array(
+        'title' => t('LiveChat'),
+        'plugin' => 'context_reaction_livechat',
+      ),
+    ),
+  );
+}

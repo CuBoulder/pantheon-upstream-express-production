@@ -1,0 +1,16 @@
+name = Livestream Bundle
+description = Livestream is a live broadcasting service to enable organizations to share experiences through live video. This bundle requires a subscription to the Livestream service.
+core = 7.x
+version = 7.x-1.1
+project = cu_livestream_bundle
+project status url = https://github.com/CuBoulder/cu_livestream_bundle
+project_demo_url = https://websupport.colorado.edu/article/451-livestream
+
+dependencies[] = cu_livestream_embed
+bundle_request = 1
+bundle_group = 'request_bundles'
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

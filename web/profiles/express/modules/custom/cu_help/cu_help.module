@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Unset default help link.
+ * This code duplicates code in the express_help module while will be removed.
+ * https://github.com/CuBoulder/express_mono/issues/361
+ */
+function cu_help_menu_alter(&$items) {
+  unset($items['admin/help']);
+}
+
+/**
+ * Implements hook_navbar().
+ *
+ * Add Help link to navbar.
+ * This code duplicates code in the express_help module while will be removed.
+ * https://github.com/CuBoulder/express_mono/issues/361
+ */
+function cu_help_navbar() {
+  $items = array();
+  // responsive_preview has a weight of 200 and right aligned
+  // Help needs to be to the left of that?
+  $items['express_help'] = array(
+    '#type' => 'navbar_item',
+    'tab' => array(
+      '#type' => 'link',
+      '#title' => t('Help'),
+      '#href' => 'http://websupport.colorado.edu/',
+      '#options' => array(
+        'html' => TRUE,
+        'attributes' => array(
+          'title' => t('Web Express Help'),
+          'class' => array('navbar-icon navbar-icon-help'),
+          'target' => '_blank',
+        ),
+      ),
+    ),
+    '#weight' => 102,
+    '#wrapper_attributes' => array(
+      'class' => array('pull-right'),
+    ),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_page_alter().
+ * Add link to bundle page on node/add page
+ */
+function cu_help_page_alter(&$page) {
+  $path = current_path();
+  switch ($path) {
+    case 'node/add':
+      if (drupal_valid_path('admin/settings/bundles/list')) {
+        $link = l(t('<i class="fa fa-plus-circle"></i> Enable bundles for additional content types'), '/admin/settings/bundles/list', array(
+          'attributes' => array(
+            'class' => array(),
+          ),
+          'html' => TRUE
+        ));
+        $page['content']['system_main']['main']['#suffix'] = '<p>' . $link . '</p>';
+      }
+      break;
+    case 'block/add':
+      if (drupal_valid_path('admin/settings/bundles/list')) {
+        $link = l(t('<i class="fa fa-plus-circle"></i> Enable bundles for additional block types'), '/admin/settings/bundles/list', array(
+          'attributes' => array(
+            'class' => array(),
+          ),
+          'html' => TRUE
+        ));
+        $page['content']['system_main']['main']['#suffix'] = '<p>' . $link . '</p>';
+      }
+      break;
+    case 'admin/structure/taxonomy':
+      $page['help']['system_help']['#markup'] = '<p>Taxonomy is the method used to classify, organize and cross-reference content.</p>';
+      break;
+  }
+}

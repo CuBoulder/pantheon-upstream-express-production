@@ -1,0 +1,52 @@
+<?php
+
+/*
+ * Implements hook_secure_permissions
+ *
+ * Adding permissions for content_sequence bean
+ */
+function cu_content_sequence_bundle_secure_permissions($role) {
+  $permissions = array(
+    'anonymous user' => array(
+      'view any content_sequence bean',
+    ),
+    'authenticated user' => array(
+      'view any content_sequence bean',
+    ),
+    'administrator' => array(
+      'create any content_sequence bean',
+      'delete any content_sequence bean',
+      'edit any content_sequence bean',
+      'view any content_sequence bean',
+    ),
+    'developer' => array(
+      'create any content_sequence bean',
+      'delete any content_sequence bean',
+      'edit any content_sequence bean',
+      'view any content_sequence bean',
+    ),
+    'edit_my_content' => array(
+      'view any content_sequence bean',
+    ),
+    'edit_only' => array(
+      'edit any content_sequence bean',
+      'view any content_sequence bean',
+    ),
+    'site_editor' => array(
+      'create any content_sequence bean',
+      'delete any content_sequence bean',
+      'edit any content_sequence bean',
+      'view any content_sequence bean',
+    ),
+    'site_owner' => array(
+      'create any content_sequence bean',
+      'delete any content_sequence bean',
+      'edit any content_sequence bean',
+      'view any content_sequence bean',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}

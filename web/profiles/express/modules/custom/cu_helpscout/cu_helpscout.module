@@ -1,0 +1,100 @@
+<?php
+
+function cu_helpscout_endpoint() {
+  $endpoint = variable_get('cu_helpscout_endpoint', 'https://www.colorado.edu/webcentral');
+
+  return $endpoint;
+}
+
+function cu_helpscout_menu() {
+  $items = array();
+
+  $items['admin/config/system/cu-helpscout'] = array(
+    'title' => 'HelpScout Configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cu_helpscout_config_form'),
+    'access arguments' => array('administer site configuration'),
+  );
+
+  return $items;
+}
+
+function cu_helpscout_config_form($form, &$form_state) {
+  $form = array();
+  $default = cu_helpscout_endpoint();
+  $form['cu_helpscout_endpoint'] = array(
+    '#title' => 'URL',
+    '#type' => 'textfield',
+    '#default_value' => $default,
+  );
+  $form = system_settings_form($form);
+  return $form;
+}
+
+/**
+ * Get cached options.
+ */
+function cu_helpscout_api_cache_get($key) {
+  $cid = 'cu_helpscout:' . $key;
+  // If this request was cached, return the cached value
+  if ($cache = cache_get($cid, 'cache')) {
+    return $cache->data;
+  }
+  return FALSE;
+}
+
+/**
+ * Save options to cache.
+ */
+function cu_helpscout_api_cache_save($key, $value) {
+  $cid = 'cu_helpscout:' . $key;
+  cache_set($cid, $value, 'cache', 3600);
+}
+
+function cu_helpscout_preprocess_page(&$vars) {
+  $endpoint = cu_helpscout_endpoint() . '/helpscout/config';
+
+  if (user_access('access navbar')) {
+
+    // Information to attach to beacon form
+    global $user;
+    global $base_url;
+    $name = realname_load($user);
+    $roles = join(', ', $user->roles);
+    $site_name = variable_get('site_name', '');
+    $site_name = str_replace(' ', '-', $site_name);
+    $site_name = preg_replace('/[^A-Za-z0-9\-]/', '', $site_name);
+
+    $beacon = '!function(e,t,n){function a(){var e=t.getElementsByTagName("script")[0],n=t.createElement("script");n.type="text/javascript",n.async=!0,n.src="https://beacon-v2.helpscout.net",e.parentNode.insertBefore(n,e)}if(e.Beacon=n=function(t,n,a){e.Beacon.readyQueue.push({method:t,options:n,data:a})},n.readyQueue=[],"complete"===t.readyState)return a();e.attachEvent?e.attachEvent("onload",a):e.addEventListener("load",a,!1)}(window,document,window.Beacon||function(){}); window.Beacon("init", "1bb01225-0287-4443-a7e5-be8f375a7766");';
+    // Beacon Prefill.
+    $config = 'Beacon(\'prefill\', {
+      name: \'' . $name . '\',
+        email: \'' . $user->mail . '\',
+        user_email: \'' . $user->mail . '\',
+        roles: \'' . $roles . '\',
+        site_name: \'' . $site_name . '\',
+        site_url: \'' . $base_url . '\',
+    });';
+    // Beacon config.
+    $config .= 'Beacon(\'config\', {
+      \'display\': {
+        \'style\': \'manual\',
+        \'iconImage\': \'message\'
+      }
+    });
+    jQuery("#navbar-bar a.navbar-icon-help").click(function(event) { event.preventDefault(); Beacon(\'open\'); });';
+
+    drupal_add_js($beacon, array(
+      'type' => 'inline',
+      'scope' => 'footer',
+      'weight' => 100,
+    ));
+
+    drupal_add_js($config, array(
+      'type' => 'inline',
+      'scope' => 'footer',
+      'weight' => 101,
+    ));
+    drupal_add_css('#hs-beacon iframe {background:rgba(0,0,0,.75) !important; }', 'inline');
+  }
+}

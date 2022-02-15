@@ -1,0 +1,15 @@
+name = People
+description = Produce individual profiles for each of your people and group by categories such as department and role (faculty, staff, etc.). People list pages can be displayed via lists, table or grid views. People list blocks can be placed on any page.
+core = 7.x
+package = CU-People
+project_demo_url = https://websupport.colorado.edu/category/153-people
+
+dependencies[] = people_content_type
+
+bundle_cache_clear = 1
+bundle_group = addon_bundles
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

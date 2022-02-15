@@ -1,0 +1,16 @@
+name = CU Live Chat
+description = Our LiveChat bundle is being replaced with Javascript Includes, a much more flexible tool for adding third-party solutions to your site. The LiveChats you have on your site will continue to work, but we ask you to begin replacing them with our newer JavaScript Includes solution.
+core = 7.x
+version = 7.x-1.2
+package = CU-LiveChat
+project = cu_livechat_bundle
+project status url = https://github.com/CuBoulder/cu_livechat_bundle
+project_demo_url = https://websupport.colorado.edu/category/466-livechat
+
+files[] = cu_livechat_bundle.context.inc
+
+bundle_cache_clear = 1
+bundle_context_clear = 1
+bundle_request = 1
+
+bundle_group = request_bundles

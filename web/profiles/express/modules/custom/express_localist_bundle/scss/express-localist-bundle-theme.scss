@@ -1,0 +1,184 @@
+@mixin rgbashadow($x, $y, $blur, $rgb, $transparency) {
+  -webkit-box-shadow: $x $y $blur rgba($rgb, $transparency);
+  -moz-box-shadow:    $x $y $blur rgba($rgb, $transparency);
+  box-shadow:         $x $y $blur rgba($rgb, $transparency);
+}
+
+@mixin shadowtransition {
+  transition: -webkit-box-shadow 0.5s ease, background-color 0.5s ease, color 0.5s ease;
+  transition: -moz-box-shadow 0.5s ease, background-color 0.5s ease, color 0.5s ease;
+  transition: box-shadow 0.5s ease, background-color 0.5s ease, color 0.5s ease;
+}
+
+$blue: #0277BD;
+$cugold: #CFB87C;
+
+.localist-events {
+  .localist-wrapper {
+    .le-date-day {
+      font-weight: 900;
+    }
+  }
+  .localist-link {
+    clear: both;
+  }
+}
+
+.localist-events {
+  #lw {
+    background: none;
+  }
+  .lwn,
+  .lwd,
+  .lwn0,
+  .lwl,
+  .lwl0 {
+    color: inherit;
+  }
+
+  .le-wrapper {
+    border-bottom-color: rgba(#757575, .35);
+  }
+  .localist-widget-hl .event-title {
+    background: rgba(0,0,0,.75);
+  }
+  .localist_widget_container span.lw_event_item_date {
+    background:rgba(0,0,0,.75);
+    font-weight:bold;
+  }
+  .localist_widget_container {
+    background: none;
+    ul.lw_event_list {
+      max-width: none;
+    }
+    li.lw_event_item {
+      background: none;
+      border:1px solid rgba(#757575, .25);
+      font:inherit;
+    }
+    .action_button {
+      text-align: right;
+      a:link,
+      a:visited {
+        color:#555;
+        //background: $blue;
+        display: inline-block;
+        line-height: 1;
+        font-weight: bold;
+        padding: 10px;
+        font-size: 75%;
+      }
+    }
+  }
+  .localist_minicalendar_events {
+    flex-grow: 1;
+  }
+  .localist_minicalendar_events:after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+  .localist_minicalendar {
+    max-width: 400px;
+    margin: 0 auto;
+    padding-bottom: 40px;
+
+    .localist_minicalendar_nav,
+    .localist_minicalendar_pager {
+      padding:10px;
+      // background: rgba(#757575, .1);
+      margin-bottom: 10px;
+      font-size: 85%;
+    }
+
+    .localist_minicalendar_pager {
+      a:link,
+      a:visited {
+        color:#fff !important;
+        background-color: $blue;
+      }
+      a:hover {
+        background-color: #444;
+      }
+      a.disabled:link,
+      a.disabled:visited {
+        color:#999 !important;
+        background-color: #ddd;
+      }
+    }
+    .localist_minicalendar_minicalendar {
+      margin-bottom: 10px;
+      background:none;
+      border:none;
+      th {
+        background: none;
+        color: inherit;
+      }
+      td {
+        background-color: #f2f2f2;
+        &:hover {
+          background: #e0e0e0;
+        }
+        a {
+          color:darken($blue, 10%) !important;
+        }
+        a:hover {
+          background:none;
+          font-weight: inherit;
+        }
+      }
+      .localist_minicalendar_today {
+        background: $blue;
+        border-bottom: inherit;
+        a:link,
+        a:visited {
+          color:#fff !important;
+        }
+      }
+    }
+  }
+  .localist-widget-hl .event-card:hover {
+    border-color:inherit;
+  }
+  .localist-widget-hl .event-details {
+    background: rgba(0,0,0,.65);
+  }
+  .localist-widget-hl .event-card .content p {
+    font-family: inherit;
+  }
+  .localist-widget-hl .event-card .event-short-date {
+    background: $blue;
+  }
+  .localist-widget-hl .event-card {
+    @include rgbashadow(0,0,10px,#000,.10);
+    @include shadowtransition;
+    border:none;
+    &:hover {
+      @include rgbashadow(0,0,20px,#000,.25);
+    }
+  }
+}
+
+/* Template 5 */
+.template-5 {
+  .le-date-wrapper {
+    //color: $cugold;
+
+    .le-date-month {
+      line-height: 1;
+    }
+    .le-date-day {
+      line-height: 1;
+    }
+    @media screen and (min-width:600px) {
+      .le-date-month {
+        font-size:250%;
+      }
+      .le-date-day {
+        font-size:350%;
+      }
+    }
+
+  }
+
+}

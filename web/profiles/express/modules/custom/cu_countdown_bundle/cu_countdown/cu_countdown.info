@@ -1,0 +1,6 @@
+name = CU Countdown
+description = Adds a shortcode for a countdown to a specific date
+core = 7.x
+package = cu_countdown_bundle
+version = 7.x-1.0
+dependencies[] = shortcode

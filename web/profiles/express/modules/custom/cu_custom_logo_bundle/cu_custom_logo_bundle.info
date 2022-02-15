@@ -1,0 +1,8 @@
+name = CU Custom Logo Bundle
+core = 7.x
+description = Adds custom logo support to Web Express
+version = 7.x-1.1
+project = cu_custom_logo_bundle
+project status url = https://github.com/CuBoulder/cu_custom_logo_bundle
+
+dependencies[] = cu_custom_logo

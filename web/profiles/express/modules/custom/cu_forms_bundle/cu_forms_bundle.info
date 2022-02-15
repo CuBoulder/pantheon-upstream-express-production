@@ -1,0 +1,24 @@
+name = Forms
+description = Easily create contact forms, requests for appointments, questionnaires and surveys.
+core = 7.x
+package = CU-Forms
+version = 7.x-3.0
+project = cu_forms_bundle
+project status url = https://github.com/CuBoulder/cu_forms_bundle
+project_demo_url = https://websupport.colorado.edu/category/151-forms
+
+dependencies[] = cu_webform
+dependencies[] = cu_feedback
+dependencies[] = cu_unused_forms
+dependencies[] = captcha
+dependencies[] = recaptcha
+dependencies[] = captcha_webform
+dependencies[] = webform
+dependencies[] = user_external_invite
+
+bundle_cache_clear = 1
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

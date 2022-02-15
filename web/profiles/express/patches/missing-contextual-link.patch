@@ -1,0 +1,17 @@
+diff --git a/bean.module b/bean.module
+index 24c5bdc..710d28f 100644
+--- a/bean.module
++++ b/bean.module
+@@ -901,6 +901,12 @@ function bean_block_view($delta = '') {
+     );
+   }
+ 
++  if (!empty($return['content']) && module_exists('contextual')) {
++    $return['content']['#contextual_links']['bean'] = array(
++      'block', array($bean->Identifier(), 'edit')
++    );
++  }
++
+   return $return;
+ }
+ 

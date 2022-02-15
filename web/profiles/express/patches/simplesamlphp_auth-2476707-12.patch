@@ -1,0 +1,14 @@
+diff --git a/simplesamlphp_auth.pages.inc b/simplesamlphp_auth.pages.inc
+index 1192529..fb51237 100644
+--- a/simplesamlphp_auth.pages.inc
++++ b/simplesamlphp_auth.pages.inc
+@@ -91,7 +91,8 @@ function simplesamlphp_auth_loginpage() {
+     }
+ 
+     // Require the user to be authenticated.
+-    $_simplesamlphp_auth_as->requireAuth();
++    $uri = isset($return_to) ? $return_to : $base_url;
++    $_simplesamlphp_auth_as->requireAuth(array('ReturnTo' => $uri));
+ 
+     // If the user is authenticated, send them along.
+   }

@@ -1,0 +1,40 @@
+.localist-events .localist-wrapper .le-date-day { font-weight: 900; }
+.localist-events .localist-link { clear: both; }
+
+.localist-events #lw { background: none; }
+.localist-events .lwn, .localist-events .lwd, .localist-events .lwn0, .localist-events .lwl, .localist-events .lwl0 { color: inherit; }
+.localist-events .le-wrapper { border-bottom-color: rgba(117, 117, 117, 0.35); }
+.localist-events .localist-widget-hl .event-title { background: rgba(0, 0, 0, 0.75); }
+.localist-events .localist_widget_container span.lw_event_item_date { background: rgba(0, 0, 0, 0.75); font-weight: bold; }
+.localist-events .localist_widget_container { background: none; }
+.localist-events .localist_widget_container ul.lw_event_list { max-width: none; }
+.localist-events .localist_widget_container li.lw_event_item { background: none; border: 1px solid rgba(117, 117, 117, 0.25); font: inherit; }
+.localist-events .localist_widget_container .action_button { text-align: right; }
+.localist-events .localist_widget_container .action_button a:link, .localist-events .localist_widget_container .action_button a:visited { color: #555; display: inline-block; line-height: 1; font-weight: bold; padding: 10px; font-size: 75%; }
+.localist-events .localist_minicalendar_events { flex-grow: 1; }
+.localist-events .localist_minicalendar_events:after { content: ""; display: table; clear: both; }
+.localist-events .localist_minicalendar { max-width: 400px; margin: 0 auto; padding-bottom: 40px; }
+.localist-events .localist_minicalendar .localist_minicalendar_nav, .localist-events .localist_minicalendar .localist_minicalendar_pager { padding: 10px; margin-bottom: 10px; font-size: 85%; }
+.localist-events .localist_minicalendar .localist_minicalendar_pager a:link, .localist-events .localist_minicalendar .localist_minicalendar_pager a:visited { color: #fff !important; background-color: #0277BD; }
+.localist-events .localist_minicalendar .localist_minicalendar_pager a:hover { background-color: #444; }
+.localist-events .localist_minicalendar .localist_minicalendar_pager a.disabled:link, .localist-events .localist_minicalendar .localist_minicalendar_pager a.disabled:visited { color: #999 !important; background-color: #ddd; }
+.localist-events .localist_minicalendar .localist_minicalendar_minicalendar { margin-bottom: 10px; background: none; border: none; }
+.localist-events .localist_minicalendar .localist_minicalendar_minicalendar th { background: none; color: inherit; }
+.localist-events .localist_minicalendar .localist_minicalendar_minicalendar td { background-color: #f2f2f2; }
+.localist-events .localist_minicalendar .localist_minicalendar_minicalendar td:hover { background: #e0e0e0; }
+.localist-events .localist_minicalendar .localist_minicalendar_minicalendar td a { color: #01578b !important; }
+.localist-events .localist_minicalendar .localist_minicalendar_minicalendar td a:hover { background: none; font-weight: inherit; }
+.localist-events .localist_minicalendar .localist_minicalendar_minicalendar .localist_minicalendar_today { background: #0277BD; border-bottom: inherit; }
+.localist-events .localist_minicalendar .localist_minicalendar_minicalendar .localist_minicalendar_today a:link, .localist-events .localist_minicalendar .localist_minicalendar_minicalendar .localist_minicalendar_today a:visited { color: #fff !important; }
+.localist-events .localist-widget-hl .event-card:hover { border-color: inherit; }
+.localist-events .localist-widget-hl .event-details { background: rgba(0, 0, 0, 0.65); }
+.localist-events .localist-widget-hl .event-card .content p { font-family: inherit; }
+.localist-events .localist-widget-hl .event-card .event-short-date { background: #0277BD; }
+.localist-events .localist-widget-hl .event-card { -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); -moz-box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); transition: -webkit-box-shadow 0.5s ease, background-color 0.5s ease, color 0.5s ease; transition: -moz-box-shadow 0.5s ease, background-color 0.5s ease, color 0.5s ease; transition: box-shadow 0.5s ease, background-color 0.5s ease, color 0.5s ease; border: none; }
+.localist-events .localist-widget-hl .event-card:hover { -webkit-box-shadow: 0 0 20px rgba(0, 0, 0, 0.25); -moz-box-shadow: 0 0 20px rgba(0, 0, 0, 0.25); box-shadow: 0 0 20px rgba(0, 0, 0, 0.25); }
+
+/* Template 5 */
+.template-5 .le-date-wrapper .le-date-month { line-height: 1; }
+.template-5 .le-date-wrapper .le-date-day { line-height: 1; }
+@media screen and (min-width: 600px) { .template-5 .le-date-wrapper .le-date-month { font-size: 250%; }
+  .template-5 .le-date-wrapper .le-date-day { font-size: 350%; } }

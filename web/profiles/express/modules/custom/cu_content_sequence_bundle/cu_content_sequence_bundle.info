@@ -1,0 +1,15 @@
+name = Content Sequence Bundle
+description = Enables a visual display of content covering a span or range. Example use cases are timelines, step-by-step instructions or showing progression.
+core = 7.x
+package = CU Content Sequence Bundle
+version = 7.x-1.5
+project status url = https://github.com/CuBoulder/cu_content_sequence_bundle
+bundle_group = addon_bundles
+description = Create sequences of content such as steps or timelines.
+dependencies[] = cu_content_sequence
+project_demo_url = https://websupport.colorado.edu/category/251-content-sequence
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

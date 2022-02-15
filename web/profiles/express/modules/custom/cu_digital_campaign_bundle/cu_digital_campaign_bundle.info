@@ -1,0 +1,35 @@
+name = Digital Campaign
+description = Features specifically for paid digital advertising campaigns giving the ability to place pixel tracking codes and funnel pages.
+core = 7.x
+package = CU-Digital Campaign
+version = 7.x-1.3
+project = cu_digital_campaign_bundle
+project status url = https://github.com/CuBoulder/cu_digital_campaign_bundle
+project_demo_url = http://www.colorado.edu/webcentral/node/1540
+
+stylesheets[all][] = css/icons.css
+stylesheets[all][] = css/search-form.css
+
+dependencies[] = embed_templates
+dependencies[] = et_tracking_pixels
+dependencies[] = et_page_top_bottom
+dependencies[] = cu_funnel_page
+
+optional-dependencies[] = cu_ab_test
+optional-dependencies[] = cu_dc_tests
+optional-dependencies[] = et_slate_form
+optional-dependencies[] = et_slate_form_bean
+optional-dependencies[] = et_slate_form_block
+optional-dependencies[] = cu_funnel_page
+optional-dependencies[] = et_blocks
+optional-dependencies[] = et_beans
+optional-dependencies[] = et_cupresents
+optional-dependencies[] = et_linkedin
+optional-dependencies[] = context_ui
+
+bundle_cache_clear = 1
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

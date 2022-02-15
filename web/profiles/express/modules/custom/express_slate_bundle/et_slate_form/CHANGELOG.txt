@@ -1,0 +1,6 @@
+
+7.x-1.x-dev
+=========================
+Issue #2880765 by afinnarn: Account for subdomain of Slate account
+Issue #2881279 by afinnarn: Make subdomain field required
+Issue #2881286 by afinnarn: Remove Hidden property from base module info file

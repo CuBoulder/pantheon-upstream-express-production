@@ -1,0 +1,155 @@
+<?php
+/**
+ * @file
+ * Code for the Responsive Visibility feature.
+ */
+
+include_once 'express_responsive_visibility_bundle.features.inc';
+
+/** Implements module_preprocess_html().
+ *
+ * Add class for viewing hidden beans if user has permission.
+ */
+function express_responsive_visibility_bundle_preprocess_html(&$vars) {
+  if (user_access('create any responsive_visibility bean')) {
+    $vars['classes_array'][] = 'express-responsive-visibility-preview';
+  }
+}
+/**
+ * Implements hook_preprocess_entity().
+ *
+ * Build output for responsive visibility beans.
+ */
+function express_responsive_visibility_bundle_preprocess_entity(&$vars) {
+
+  $entity_type = $vars['elements']['#entity_type'];
+  $bundle = $vars['elements']['#bundle'];
+
+  // Only preprocess responsive visibilitybeans.
+  if ($entity_type == 'bean' && $bundle == 'responsive_visibility') {
+
+    $vars['content'] = array();
+    $blocks = array();
+    $output = '';
+
+    // Build block output
+    foreach ($vars['bean']->field_responsive_vis_block[LANGUAGE_NONE] as $bean) {
+      $bean_render = _cu_block_section_rerender($bean);
+      $output .= render($bean_render);
+    }
+    $vars['content']['blocks']['#markup'] = $output;
+
+    // Visibility settings
+    $settings = array();
+    $settings['mobile'] = $vars['bean']->field_responsive_vis_mobile[LANGUAGE_NONE][0]['value'];
+    $settings['tablet'] = $vars['bean']->field_responsive_vis_tablet[LANGUAGE_NONE][0]['value'];
+    $settings['desktop'] = $vars['bean']->field_responsive_vis_desktop[LANGUAGE_NONE][0]['value'];
+
+    // Apply visibility classes
+    $classes = array();
+    $classes[] = 'responsive-visibility';
+    foreach ($settings as $type => $setting) {
+      $classes[] = express_responsive_visibility_bundle_classes($setting, $type);
+    }
+    $classes = join(' ', $classes);
+    $vars['content']['blocks']['#prefix'] = '<div class="' . $classes . '"><div class="responsive-visibility-blocks">';
+    $vars['content']['#suffix'] = '</div></div>';
+  }
+
+}
+
+/**
+ * CSS classes for responsive visibility.
+ */
+function express_responsive_visibility_bundle_classes($value, $display) {
+  $classes['mobile'] = array(
+    'default' => '',
+    'visible' => 'visible-xs',
+    'hidden' => 'hidden-xs',
+  );
+  $classes['tablet'] = array(
+    'default' => '',
+    'visible' => 'visible-sm',
+    'hidden' => 'hidden-sm',
+  );
+  $classes['desktop'] = array(
+    'default' => '',
+    'visible' => 'visible-md visible-lg',
+    'hidden' => 'hidden-md hidden-lg',
+  );
+  return $classes[$display][$value];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Remove title field from form - title field should never be used.
+ */
+function express_responsive_visibility_bundle_form_bean_form_alter(&$form, &$form_state, $form_id) {
+  if (($form['bean']['#value']->type == 'responsive_visibility')) {
+    $form['title']['#access'] = FALSE;
+  }
+}
+
+/*
+ * Implements hook_secure_permissions
+ *
+ * Adding permissions for video hero unit bean
+ */
+function express_responsive_visibility_bundle_secure_permissions($role) {
+  $permissions = array(
+    'anonymous user' => array(
+      'view any responsive_visibility bean',
+    ),
+    'authenticated user' => array(
+      'view any responsive_visibility bean',
+    ),
+    'administrator' => array(
+      'create any responsive_visibility bean',
+      'delete any responsive_visibility bean',
+      'edit any responsive_visibility bean',
+      'view any responsive_visibility bean',
+    ),
+    'developer' => array(
+      'create any responsive_visibility bean',
+      'delete any responsive_visibility bean',
+      'edit any responsive_visibility bean',
+      'view any responsive_visibility bean',
+    ),
+    'edit_my_content' => array(
+      'view any responsive_visibility bean',
+    ),
+    'edit_only' => array(
+      'edit any responsive_visibility bean',
+      'view any responsive_visibility bean',
+    ),
+    'site_editor' => array(
+      'create any responsive_visibility bean',
+      'delete any responsive_visibility bean',
+      'edit any responsive_visibility bean',
+      'view any responsive_visibility bean',
+    ),
+    'site_owner' => array(
+      'create any responsive_visibility bean',
+      'delete any responsive_visibility bean',
+      'edit any responsive_visibility bean',
+      'view any responsive_visibility bean',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}
+
+/**
+ * Implements hook_unused_beans().
+ *
+ */
+function express_responsive_visibility_bundle_unused_beans($vars) {
+  $vars['Responsive Visibility']['field_data_field_responsive_vis_block'] = array(
+    'table' => 'field_data_field_responsive_vis_block',
+    'column' => 'field_responsive_vis_block_target_id',
+  );
+  return $vars;
+}

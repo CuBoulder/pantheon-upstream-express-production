@@ -1,0 +1,3 @@
+name = Funnel Pages
+description = Hide site navigation, search, etc to funnel users to a form or other CTA
+core = 7.x

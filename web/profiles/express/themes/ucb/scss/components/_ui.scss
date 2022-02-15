@@ -1,0 +1,16 @@
+.ui-datepicker-next {
+  &:before {
+    font-family: FontAwesome;
+    content: "\f0a9";
+    display: block;
+    text-align: center;
+  }
+}
+.ui-datepicker-prev {
+  &:before {
+    font-family: FontAwesome;
+    content: "\f0a8";
+    display: block;
+    text-align: center;
+  }
+}

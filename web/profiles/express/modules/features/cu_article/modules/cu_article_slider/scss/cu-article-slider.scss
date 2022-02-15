@@ -1,0 +1,121 @@
+@mixin gradient($color, $color2:false) {
+  @if $color2 {
+
+  }
+  @else {
+    $color2: darken($color, 5%);
+  }
+  background-color: $color;
+  background: linear-gradient(to bottom, $color 0%,$color2 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+}
+
+@mixin transparentGradient($color, $alpha, $direction) {
+  $rgba1: rgba($color,$alpha);
+  $rgba2: rgba($color,0);
+  background-color: $color;
+  background-image: linear-gradient($direction, $rgba1, $rgba2);
+}
+
+@mixin clearfloats {
+  &:after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+}
+// CU Gold
+$cugold: #cfb87c;
+
+/* SLIDER */
+.article-slider-wrapper {
+  padding: 10px 0 35px;
+}
+.article-slider {
+
+
+  position: relative;
+
+  .flickity-prev-next-button.previous {
+    left:5px;
+  }
+  .flickity-prev-next-button.next {
+    right:5px;
+  }
+
+  .flickity-prev-next-button {
+    width: 25px;
+    height: 25px;
+    //border-radius: 2px;
+    background: #333;
+    border:3px solid #fff;
+    z-index:2;
+  }
+  .flickity-prev-next-button:hover {
+    background: #000;
+  }
+  /* arrow color */
+  .flickity-prev-next-button .arrow {
+    fill: white;
+  }
+  .flickity-prev-next-button.no-svg {
+    color: white;
+  }
+  .flickity-viewport {
+    transition: height 0.5s;
+  }
+  .flickity-page-dots {
+    bottom: -30px;
+  }
+  .flickity-page-dots .dot {
+    width: 12px;
+    height: 12px;
+    opacity: 1;
+    background: transparent;
+    border: 2px solid #757575;
+  }
+  /* fill-in selected dot */
+  .flickity-page-dots .dot.is-selected {
+    background: #757575;
+  }
+}
+.article-slider .article-slider-node {
+  width:100%;
+  @media screen and (min-width:768px) {
+    & {
+      width:50%;
+    }
+  }
+  @media screen and (min-width:960px) {
+    & {
+      width:33.3333%;
+    }
+  }
+  .article-slider-node-inner {
+    position: relative;
+    margin:0 20px;
+    overflow: hidden;
+  }
+  img {
+    display: block;
+    width:100%;
+    height: auto;
+  }
+  h3 {
+    position: absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    margin:0;
+    font-size: 100%;
+    color:#fff;
+    display: block;
+    padding:10px;
+    padding-top: 50px;
+    font-weight: bold;
+    @include gradient($color: rgba(0,0,0,0), $color2: rgba(0,0,0,.85));
+  }
+  a.article-slider-link:hover h3 {
+    @include gradient($color: rgba(0,0,0,0), $color2: rgba(0,0,0,1));
+    color:$cugold;
+  }
+}

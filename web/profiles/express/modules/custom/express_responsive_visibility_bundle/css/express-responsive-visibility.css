@@ -1,0 +1,21 @@
+@media (max-width: 767px) { .visible-xs { display: block !important; } }
+@media (min-width: 768px) and (max-width: 991px) { .visible-sm { display: block !important; } }
+@media (min-width: 992px) and (max-width: 1199px) { .visible-md { display: block !important; } }
+@media (min-width: 1200px) { .visible-lg { display: block !important; } }
+@media (max-width: 767px) { .hidden-xs { display: none !important; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-xs { display: block !important; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-xs .responsive-visibility-blocks { opacity: .25; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-xs:before { display: block; padding: 10px; background: #888; color: #fff; font-weight: bold; content: 'This block is set to be hidden from this display.'; font-size: 75%; margin-bottom: 5px; } }
+@media (min-width: 768px) and (max-width: 991px) { .hidden-sm { display: none !important; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-sm { display: block !important; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-sm .responsive-visibility-blocks { opacity: .25; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-sm:before { display: block; padding: 10px; background: #888; color: #fff; font-weight: bold; content: 'This block is set to be hidden from this display.'; font-size: 75%; margin-bottom: 5px; } }
+@media (min-width: 992px) and (max-width: 1199px) { .hidden-md { display: none !important; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-md { display: block !important; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-md .responsive-visibility-blocks { opacity: .25; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-md:before { display: block; padding: 10px; background: #888; color: #fff; font-weight: bold; content: 'This block is set to be hidden from this display.'; font-size: 75%; margin-bottom: 5px; } }
+@media (min-width: 1200px) { .hidden-lg { display: none !important; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-lg { display: block !important; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-lg .responsive-visibility-blocks { opacity: .25; }
+  .express-responsive-visibility-preview .responsive-visibility.hidden-lg:before { display: block; padding: 10px; background: #888; color: #fff; font-weight: bold; content: 'This block is set to be hidden from this display.'; font-size: 75%; margin-bottom: 5px; } }
+.bean-type-responsive_visibility > .block-inner > h2.block-title { display: none; }

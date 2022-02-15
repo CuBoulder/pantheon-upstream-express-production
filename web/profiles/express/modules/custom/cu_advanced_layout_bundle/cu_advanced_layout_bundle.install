@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * @file
+ * Contains install hooks for cu_advanced_layout_bundle.
+ */
+
+/**
+ * Enable cu_block_to_bean module.
+ */
+function cu_advanced_layout_bundle_update_7001() {
+  module_enable(array('cu_block_to_bean'));
+}
+
+/**
+ * Enable context_error module.
+ */
+function cu_advanced_layout_bundle_update_7002() {
+  module_enable(array('context_error'));
+  drupal_flush_all_caches();
+}
+
+/**
+ * Enable cu_js_includes module.
+ */
+function cu_advanced_layout_bundle_update_7003() {
+  module_enable(array('cu_js_includes'));
+}

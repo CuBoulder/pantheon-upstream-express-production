@@ -1,0 +1,27 @@
+name = CU Publications
+description = Provides the ability to create magazine style issues from article content types, issue cover art, current issue and issue archive pages, and other specialty blocks.
+core = 7.x
+package = CU-Publications
+project = cu_publications_bundle
+version = 7.x-1.2
+project status url = https://github.com/CuBoulder/cu_publications_bundle
+project_demo_url = https://websupport.colorado.edu/category/155-publication
+
+dependencies[] = cu_publication
+dependencies[] = cu_news_bundle
+dependencies[] = ctools
+dependencies[] = entityreference
+dependencies[] = field_collection
+dependencies[] = image
+dependencies[] = list
+dependencies[] = options
+dependencies[] = strongarm
+dependencies[] = text
+
+bundle_cache_clear = 1
+bundle_group = 'addon_bundles'
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

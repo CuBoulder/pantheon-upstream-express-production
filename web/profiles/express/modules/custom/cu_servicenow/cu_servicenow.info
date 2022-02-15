@@ -1,0 +1,16 @@
+name = CU ServiceNow
+description = ServiceNow Webform integration added in cu_forms_bundle version 7.x-2.3.
+core = 7.x
+package = Features
+version = 7.x-1.0
+
+configure = admin/config/content/servicenow
+
+dependencies[] = cu_webform
+dependencies[] = webform
+dependencies[] = features
+dependencies[] = list
+dependencies[] = options
+features[features_api][] = api:2
+features[field_base][] = field_cu_servicenow
+features[field_instance][] = node-webform-field_cu_servicenow

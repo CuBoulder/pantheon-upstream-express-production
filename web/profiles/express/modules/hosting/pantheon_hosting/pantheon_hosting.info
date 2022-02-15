@@ -1,0 +1,15 @@
+name = Pantheon Hosting
+description = Provides CU-specific functionality, like adding variables, to Express Core and getting Express to work within Pantheon hosting.
+core = 7.x
+version = 7.x-1.1
+package = Hosting
+
+dependencies[] = pantheon_api
+dependencies[] = pantheon_advanced_page_cache
+dependencies[] = simplesamlphp_auth
+dependencies[] = cu_users
+dependencies[] = cu_saml
+dependencies[] = dblog
+dependencies[] = noreqnewpass
+dependencies[] = smtp
+dependencies[] = maillog

@@ -1,0 +1,75 @@
+<?php
+
+/**
+ * @file
+ * Drupal hooks for et_linkedin module.
+ */
+
+/**
+ * Callback to generate form components for LinkedIn embed type.
+ *
+ * @param array $form
+ *   Form containing default embed template form options.
+ * @param array $form_state
+ *   State of the default embed template form.
+ * @param int|null $id
+ *   ID of the current embed being edited if that embed exists.
+ * @param array $data
+ *   Data of the current embed if it is being edited.
+ */
+function et_linkedin_form_options(&$form, &$form_state, $id = NULL, $data = array()) {
+
+  $size = variable_get('et_form_field_size', 128);
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Embed Data'),
+    '#weight' => -10,
+  );
+
+  $form['options']['account_id'] = array(
+    '#title' => t('Account ID'),
+    '#description' => t('The Partner ID of your LinkedIn account.'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['account_id']) ? $data['account_id'] : '',
+    '#required' => TRUE,
+    '#size' => $size,
+  );
+
+  $position_options = array(
+    'top' => 'Top',
+    'bottom' => 'Bottom',
+  );
+
+  $form['options']['position'] = array(
+    '#title' => t('Position'),
+    '#type' => 'select',
+    '#options' => $position_options,
+    '#description' => t('Choose where on the page the embed is placed. Look at the embed code instructions to determine where it should be placed.'),
+    '#default_value' => !empty($data['position']) ? $data['position'] : 0,
+  );
+}
+
+/**
+ * Implements hook_embed_templates_types().
+ *
+ * @return array
+ *   List of custom embed types.
+ */
+function et_linkedin_embed_templates_types() {
+  $custom_types = array();
+  $module_path = drupal_get_path('module', 'et_linkedin');
+  $default_status = 'unpublished';
+
+  $custom_types['et_linkedin'] = array(
+    'label' => 'LinkedIn Insight Tag',
+    'form_callback' => 'et_linkedin_form_options',
+    'submission_callback' => NULL,
+    'renderer' => 'page_top_bottom',
+    'default_status' => $default_status,
+    'path' => $module_path,
+    'template' => 'templates/linkedin-insight-tag',
+  );
+
+  return $custom_types;
+}

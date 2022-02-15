@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Contains embed type definition for et_slate_form_bean module.
+ */
+
+/**
+ * Implements hook_embed_templates_types().
+ *
+ * @return array
+ *   List of custom embed types.
+ */
+function et_slate_form_bean_embed_templates_types() {
+  $custom_types = array();
+  $module_path = drupal_get_path('module', 'et_slate_form');
+  $default_status = 'unpublished';
+
+  $custom_types['et_slate_form_bean'] = array(
+    'label' => 'Slate Form Bean',
+    'form_callback' => 'et_slate_form_options',
+    'submission_callback' => 'et_beans_bean_form_submit',
+    'renderer' => 'bean',
+    'default_status' => $default_status,
+    'path' => $module_path,
+    'template' => 'templates/slate-form',
+  );
+
+  return $custom_types;
+}

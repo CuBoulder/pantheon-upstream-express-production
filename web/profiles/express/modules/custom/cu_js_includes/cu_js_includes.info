@@ -1,0 +1,16 @@
+name = JS Includes
+description = Add third party Javascript to an Express site.
+core = 7.x
+package = Other
+version = 7.x-1.0
+dependencies[] = bean_admin_ui
+dependencies[] = ctools
+dependencies[] = entity
+dependencies[] = features
+dependencies[] = list
+stylesheets[all][] = css/cu-js-includes.css
+features[bean_type][] = js_include
+features[ctools][] = bean_admin_ui:bean:5
+features[features_api][] = api:2
+features[field_base][] = field_js_include
+features[field_instance][] = bean-js_include-field_js_include

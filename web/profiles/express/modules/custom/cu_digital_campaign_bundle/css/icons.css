@@ -1,0 +1,5 @@
+ul.tabs--primary li a.embeds:before,
+h1.page-title.icon-embeds:before {
+    content: '\f247';
+}
+

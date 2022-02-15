@@ -1,0 +1,14 @@
+diff --git a/modules/contrib/simplesamlphp_auth/simplesamlphp_auth.pages.inc b/modules/contrib/simplesamlphp_auth/simplesamlphp_auth.pages.inc
+index fb512376..f5a9c60c 100644
+--- a/modules/contrib/simplesamlphp_auth/simplesamlphp_auth.pages.inc
++++ b/modules/contrib/simplesamlphp_auth/simplesamlphp_auth.pages.inc
+@@ -91,7 +91,8 @@ function simplesamlphp_auth_loginpage() {
+     }
+ 
+     // Require the user to be authenticated.
+-    $uri = isset($return_to) ? $return_to : $base_url;
++    // SSO on Pantheon Patch: Redirect to admin/dashboard after logging in
++    $uri = isset($return_to) ? $return_to : $base_url . '/admin/dashboard';
+     $_simplesamlphp_auth_as->requireAuth(array('ReturnTo' => $uri));
+ 
+     // If the user is authenticated, send them along.

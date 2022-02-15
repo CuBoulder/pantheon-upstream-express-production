@@ -1,0 +1,23 @@
+name = Advanced Layout
+description = The features in this bundle allow you to create complex and dynamic layouts of content. 
+
+core = 7.x
+package = CU-Advanced Layout
+project_demo_url = https://websupport.colorado.edu/category/144-advanced-layout
+dependencies[] = context_ui
+dependencies[] = cu_column_override
+dependencies[] = cu_block_section
+dependencies[] = cu_block_row
+dependencies[] = cu_block_to_bean
+dependencies[] = context_error
+dependencies[] = cu_js_includes
+
+bundle_cache_clear = 1
+bundle_context_clear = 1
+
+bundle_group = addon_bundles
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

@@ -1,0 +1,3 @@
+ul.tabs--primary li a.includes:before {
+    content: "\f121";
+}

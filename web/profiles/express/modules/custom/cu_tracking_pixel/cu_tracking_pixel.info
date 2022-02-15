@@ -1,0 +1,8 @@
+name = Tracking Pixel
+description = Provide a custom entity for embedding pixel tracking codes.
+core = 7.x
+dependencies[] = entity
+
+stylesheets[all][] = cu-tracking-pixel.css
+
+bundle_group = Admin Bundles

@@ -1,0 +1,75 @@
+<?php
+
+/**
+ * @file
+ * cu_block_to_bean.install
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Default settings.
+ */
+function cu_block_to_bean_install() {
+  $settings = array();
+
+  $included_modules = array(
+    'cu_article' => 'cu_article',
+    'cu_publication' => 'cu_publication',
+    'cu_related_articles' => 'cu_related_articles',
+    'cu_search' => 'cu_search',
+    'et_blocks' => 'et_blocks',
+    'menu' => 'menu',
+    'menu_block' => 'menu_block',
+    'webform' => 'webform',
+  );
+  $excluded_deltas = 'devel,features,cu_search,cu_search_mobile,cu_search_page';
+
+  variable_set('cu_block_to_bean_module_include', $included_modules);
+  variable_set('cu_block_to_bean_delta_exclude', $excluded_deltas);
+}
+
+/**
+ * Add cu_publication and menu_block to allowed modules.
+ */
+function cu_block_to_bean_update_7001() {
+  $included_modules = array(
+    'cu_article' => 'cu_article',
+    'cu_publication' => 'cu_publication',
+    'cu_related_articles' => 'cu_related_articles',
+    'menu' => 'menu',
+    'menu_block' => 'menu_block',
+    'webform' => 'webform',
+  );
+  variable_set('cu_block_to_bean_module_include', $included_modules);
+}
+
+/**
+ * Add et_blocks to available options.
+ * This will allow any embed template bock to be placed with express_layout.
+ */
+function cu_block_to_bean_update_7002() {
+  $included_modules = variable_get('cu_block_to_bean_module_include', array());
+  $included_modules['et_blocks'] = 'et_blocks';
+  variable_set('cu_block_to_bean_module_include', $included_modules);
+}
+
+/**
+ * Add search blocks to available options.
+ */
+function cu_block_to_bean_update_7003() {
+  $included_modules = variable_get('cu_block_to_bean_module_include', array());
+  $included_modules['cu_search'] = 'cu_search';
+  variable_set('cu_block_to_bean_module_include', $included_modules);
+  $excluded_deltas = variable_get('excluded_deltas', '');
+  $excluded_deltas = $excluded_deltas . ',cu_search,cu_search_mobile,cu_search_page';
+  variable_set('cu_block_to_bean_delta_exclude', $excluded_deltas);
+}
+
+/**
+ * Fixing issue where excluded deltas wasn't set correctly in the last update.
+ */
+function cu_block_to_bean_update_7004() {
+  $excluded_deltas = 'devel,features,cu_search,cu_search_mobile,cu_search_page';
+  variable_set('cu_block_to_bean_delta_exclude', $excluded_deltas);
+}

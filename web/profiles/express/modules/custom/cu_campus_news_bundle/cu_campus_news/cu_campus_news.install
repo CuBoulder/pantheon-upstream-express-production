@@ -1,0 +1,20 @@
+<?php
+
+/**
+* Implements hook_schema().
+*/
+function cu_campus_news_schema() {
+  $schema = array();
+  $schema['cu_campus_news'] = drupal_get_schema_unprocessed('system', 'cache');
+  return $schema;
+}
+
+/**
+ * Adds cache table for campus news.
+ */
+function cu_campus_news_update_7001() {
+  if (!db_table_exists('cu_campus_news')) {
+    $schema['cu_campus_news'] = drupal_get_schema_unprocessed('system', 'cache');
+    db_create_table('cu_campus_news', $schema['cu_campus_news']);
+  }
+}

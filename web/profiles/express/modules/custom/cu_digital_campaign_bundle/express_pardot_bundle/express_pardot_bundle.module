@@ -1,0 +1,135 @@
+<?php
+
+/**
+ * @file
+ * Drupal hooks for express_pardot_bundle module.
+ */
+
+/**
+ * Callback to generate form components for Pardot Form embed type.
+ *
+ * @param array $form
+ *   Form containing default embed template form options.
+ * @param array $form_state
+ *   State of the default embed template form.
+ * @param int|null $id
+ *   ID of the current embed being edited if that embed exists.
+ * @param array $data
+ *   Data of the current embed if it is being edited.
+ */
+function express_pardot_bundle_form_options(&$form, &$form_state, $id = NULL, $data = array()) {
+
+  // No block or bean will need to have a path.
+  $form['embed']['path']['#access'] = FALSE;
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Embed Data'),
+    '#weight' => -10,
+  );
+
+  $form['options']['pardot_domain'] = array(
+    '#title' => t('Pardot Domain'),
+    '#description' => t('The custom sub-domain of the Pardot account.'),
+    '#type' => 'select',
+    '#options' => _pardot_domain_options(),
+    '#default_value' => !empty($data['pardot_domain']) ? $data['pardot_domain'] : variable_get('express_pardot_bundle_pardot_domain', ''),
+    '#required' => TRUE,
+  );
+
+  $form['options']['pardot_primary_id'] = array(
+    '#title' => t('Primary Form ID'),
+    '#description' => t('The primary ID of the Pardot form.'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['pardot_primary_id']) ? $data['pardot_primary_id'] : '',
+    '#required' => TRUE,
+  );
+  $form['options']['pardot_date'] = array(
+    '#title' => t('Form Date'),
+    '#description' => t('The date of the Pardot form.'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['pardot_date']) ? $data['pardot_date'] : '',
+    '#required' => TRUE,
+  );
+  $form['options']['pardot_secondary_id'] = array(
+    '#title' => t('Secondary Form ID'),
+    '#description' => t('The secondary ID of the Pardot form.'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['pardot_secondary_id']) ? $data['pardot_secondary_id'] : '',
+    '#required' => TRUE,
+  );
+  $form['options']['pardot_form_height'] = array(
+    '#title' => t('Form Height'),
+    '#description' => t('The height of the Pardot form iframe.'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['pardot_form_height']) ? $data['pardot_form_height'] : '500',
+    '#required' => TRUE,
+  );
+}
+
+/**
+ * Provides options for the pardot domain field.
+ */
+function _pardot_domain_options() {
+  return array(
+    'https://lawschool.colorado.edu' => 'https://lawschool.colorado.edu'
+  );
+}
+
+/**
+ * Implements hook_embed_templates_types().
+ *
+ * @return array
+ *   List of custom embed types.
+ */
+function express_pardot_bundle_embed_templates_types() {
+  $custom_types = array();
+  $module_path = drupal_get_path('module', 'express_pardot_bundle');
+  $default_status = 'unpublished';
+
+  $custom_types['express_pardot_bundle_block'] = array(
+    'label' => 'Pardot Form Block',
+    'form_callback' => 'express_pardot_bundle_form_options',
+    'submission_callback' => NULL,
+    'renderer' => 'block',
+    'default_status' => $default_status,
+    'path' => $module_path,
+    'template' => 'templates/pardot-form',
+  );
+
+  return $custom_types;
+}
+
+/**
+ * Implements hook_secure_permissions.
+ */
+function express_pardot_bundle_secure_permissions($role) {
+  $permissions = array(
+    'administrator' => array(
+      'edit express_pardot_bundle_block embeds',
+      'view express_pardot_bundle_block embeds',
+    ),
+    'anonymous user' => array(
+      'view express_pardot_bundle_block embeds',
+    ),
+    'authenticated user' => array(
+      'view express_pardot_bundle_block embeds',
+    ),
+    'campaign_manager' => array(
+      'edit express_pardot_bundle_block embeds',
+      'view express_pardot_bundle_block embeds',
+    ),
+    'developer' => array(
+      'edit express_pardot_bundle_block embeds',
+      'view express_pardot_bundle_block embeds',
+    ),
+    'site_owner' => array(
+      'edit express_pardot_bundle_block embeds',
+      'view express_pardot_bundle_block embeds',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}

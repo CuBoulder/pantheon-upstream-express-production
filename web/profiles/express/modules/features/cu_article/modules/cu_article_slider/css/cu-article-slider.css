@@ -1,0 +1,22 @@
+/* SLIDER */
+.article-slider-wrapper { padding: 10px 0 35px; }
+
+.article-slider { position: relative; /* arrow color */ /* fill-in selected dot */ }
+.article-slider .flickity-prev-next-button.previous { left: 5px; }
+.article-slider .flickity-prev-next-button.next { right: 5px; }
+.article-slider .flickity-prev-next-button { width: 25px; height: 25px; background: #333; border: 3px solid #fff; z-index: 2; }
+.article-slider .flickity-prev-next-button:hover { background: #000; }
+.article-slider .flickity-prev-next-button .arrow { fill: white; }
+.article-slider .flickity-prev-next-button.no-svg { color: white; }
+.article-slider .flickity-viewport { transition: height 0.5s; }
+.article-slider .flickity-page-dots { bottom: -30px; }
+.article-slider .flickity-page-dots .dot { width: 12px; height: 12px; opacity: 1; background: transparent; border: 2px solid #757575; }
+.article-slider .flickity-page-dots .dot.is-selected { background: #757575; }
+
+.article-slider .article-slider-node { width: 100%; }
+@media screen and (min-width: 768px) { .article-slider .article-slider-node { width: 50%; } }
+@media screen and (min-width: 960px) { .article-slider .article-slider-node { width: 33.3333%; } }
+.article-slider .article-slider-node .article-slider-node-inner { position: relative; margin: 0 20px; overflow: hidden; }
+.article-slider .article-slider-node img { display: block; width: 100%; height: auto; }
+.article-slider .article-slider-node h3 { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; font-size: 100%; color: #fff; display: block; padding: 10px; padding-top: 50px; font-weight: bold; background-color: transparent; background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.85) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */ }
+.article-slider .article-slider-node a.article-slider-link:hover h3 { background-color: transparent; background: linear-gradient(to bottom, transparent 0%, black 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */ color: #cfb87c; }

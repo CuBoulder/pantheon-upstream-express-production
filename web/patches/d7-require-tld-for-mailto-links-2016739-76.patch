@@ -1,0 +1,57 @@
+diff --git a/modules/filter/filter.module b/modules/filter/filter.module
+index e9fd01d388..a2f3a01252 100644
+--- a/modules/filter/filter.module
++++ b/modules/filter/filter.module
+@@ -1497,7 +1497,11 @@ function _filter_url($text, $filter) {
+   $tasks['_filter_url_parse_full_links'] = $pattern;
+
+   // Match e-mail addresses.
+-  $url_pattern = "[A-Za-z0-9._+-]{1,254}@(?:$domain)";
++  // Mail domain pattern differs from the general domain pattern by requiring
++  // a TLD match. This allows patterns like foo@bar in text without
++  // being converted to a mailto link.
++  $email_domain = '(?:[A-Za-z0-9._+-]+\.)+[A-Za-z]{2,64}\b';
++  $url_pattern = "[A-Za-z0-9._+-]{1,254}@(?:$email_domain)";
+   $pattern = "`($url_pattern)`";
+   $tasks['_filter_url_parse_email_links'] = $pattern;
+
+diff --git a/modules/filter/tests/filter.url-input.txt b/modules/filter/tests/filter.url-input.txt
+index 7b33af56ca..32f4c5e89e 100644
+--- a/modules/filter/tests/filter.url-input.txt
++++ b/modules/filter/tests/filter.url-input.txt
+@@ -9,6 +9,7 @@ This is just a www.test.com. paragraph with person@test.com. some http://www.tes
+ http://www.test.com
+ www.test.com
+ person@test.com
++person@test
+ <code>www.test.com</code>
+
+ What about tags that don't exist <x>like x say www.test.com</x>? And what about tag <pooh>beginning www.test.com with p?</pooh>
+@@ -25,6 +26,7 @@ The old URL filter has problems with <a title="kind of link www.example.com with
+ <dt>www.test.com</dt>
+ <dd>http://www.test.com</dd>
+ <dd>person@test.com</dd>
++<dd>person@test</dd>
+ <dt>check www.test.com</dt>
+ <dd>this with some text around: http://www.test.com not so easy person@test.com now?</dd>
+ </dl>
+diff --git a/modules/filter/tests/filter.url-output.txt b/modules/filter/tests/filter.url-output.txt
+index 9cc5073088..6b2defd945 100644
+--- a/modules/filter/tests/filter.url-output.txt
++++ b/modules/filter/tests/filter.url-output.txt
+@@ -9,6 +9,7 @@ This is just a <a href="http://www.test.com">www.test.com</a>. paragraph with <a
+ <a href="http://www.test.com">http://www.test.com</a>
+ <a href="http://www.test.com">www.test.com</a>
+ <a href="mailto:person@test.com">person@test.com</a>
++person@test
+ <code>www.test.com</code>
+
+ What about tags that don't exist <x>like x say <a href="http://www.test.com">www.test.com</a></x>? And what about tag <pooh>beginning <a href="http://www.test.com">www.test.com</a> with p?</pooh>
+@@ -25,6 +26,7 @@ The old URL filter has problems with <a title="kind of link www.example.com with
+ <dt><a href="http://www.test.com">www.test.com</a></dt>
+ <dd><a href="http://www.test.com">http://www.test.com</a></dd>
+ <dd><a href="mailto:person@test.com">person@test.com</a></dd>
++<dd>person@test</dd>
+ <dt>check <a href="http://www.test.com">www.test.com</a></dt>
+ <dd>this with some text around: <a href="http://www.test.com">http://www.test.com</a> not so easy <a href="mailto:person@test.com">person@test.com</a> now?</dd>
+ </dl>

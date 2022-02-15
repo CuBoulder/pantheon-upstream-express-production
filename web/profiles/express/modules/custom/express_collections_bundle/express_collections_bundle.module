@@ -1,0 +1,418 @@
+<?php
+/**
+ * @file
+ * Code for the Collections feature.
+ */
+
+include_once 'express_collections_bundle.features.inc';
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Let Drupal know we have some theme templates in the module.
+ */
+function express_collections_bundle_theme_registry_alter(&$theme_registry) {
+  $module_path = drupal_get_path('module', 'express_collections_bundle');
+  $theme_registry_copy = $theme_registry;
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'bean', $module_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+  $hooks = array('node', 'bean');
+  foreach ($hooks as $h) {
+    if (isset($theme_registry[$h]['theme paths'])) {
+      $first_element = array_shift($theme_registry[$h]['theme paths']);
+      array_unshift($theme_registry[$h]['theme paths'], array_shift($theme_registry[$h]['theme paths']), $module_path);
+    }
+  }
+}
+
+/**
+ * Sort terms alphabetically
+ */
+function _express_collections_bundle_category_name_sort($a, $b) {
+  return strcmp($a['name'], $b['name']);
+}
+
+/**
+ * Implements module_preprocess_entity().
+ *
+ * Get the collection bean output.
+ */
+function express_collections_bundle_preprocess_entity(&$vars) {
+  $entity_type = $vars['elements']['#entity_type'];
+  $bundle = $vars['elements']['#bundle'];
+
+  // Only do this on collection grid beans
+  if ($vars['elements']['#bundle'] == 'collection_grid') {
+
+    // Collection grid options
+    $summary = ($vars['bean']->field_collection_display_summary[LANGUAGE_NONE][0]['value'] == 'show') ? 1 : 0;
+    $filter_effect = !empty($vars['bean']->field_collection_filter_effect) ? $vars['bean']->field_collection_filter_effect[LANGUAGE_NONE][0]['value'] : 'fade';
+    $multiple = !empty($vars['bean']->field_collection_multiselect[LANGUAGE_NONE][0]['value']) ? 1 : 0;
+    // If multiple selections is set, add a different template.
+    if ($multiple) {
+      $vars['theme_hook_suggestions'][] = 'bean__collection_grid__multiple';
+    }
+    // Build anchor link prefix
+    $anchor = 'collection-' . $vars['bean']->bid . '-';
+    $vars['content'] = array();
+    $types = array();
+    $terms = array();
+
+    // Get the collection types
+    foreach ($vars['bean']->field_collection_grid_type[LANGUAGE_NONE] as $type) {
+      $terms[] = (array) taxonomy_term_load($type['tid']);
+      $types[] = $type['tid'];
+      $children = taxonomy_get_children($type['tid']);
+      foreach ($children as $child) {
+        $types[] = $child->tid;
+      }
+    }
+
+    // Get the collection categories
+
+    $categories = array();
+    $terms = array();
+    $sort = 0;
+    $vars['content']['filters'] = array();
+    $items = $vars['bean']->field_collection_grid_categories[LANGUAGE_NONE];
+
+    foreach ($items as $key => $item) {
+      $vars['content']['filters'][$key] = array();
+      $id = $item['value'];
+      $fc = field_collection_item_load($id);
+      $output = '';
+      $label = !empty($fc->field_collection_grid_label) ? $fc->field_collection_grid_label[LANGUAGE_NONE][0]['value'] : NULL;
+      $tids = array();
+      foreach ($fc->field_collection_grid_category[LANGUAGE_NONE] as $term) {
+        $tids[] = $term['tid'];
+      }
+      $terms = taxonomy_term_load_multiple($tids);
+      // Sort terms according to term weight.
+      usort($terms, function ($a, $b) {
+        return $a->weight - $b->weight;
+      });
+
+      // Filter background image
+      $image = !empty($fc->field_collection_category_bg) ? image_style_url('large', $fc->field_collection_category_bg[LANGUAGE_NONE][0]['uri']) : NULL;
+      if (count($items) > 1) {
+        $vars['content']['filters'][$key]['#markup'] = theme('collection_filter_links', array(
+          'label' => $label,
+          'collection_filter_terms' => $terms,
+          'collection_id' => $vars['bean']->bid,
+          'image' => $image,
+          'multiple' => $multiple
+        ));
+      }
+      elseif (count($items) == 1 && $image) {
+        $vars['content']['filters'][$key]['#markup'] = theme('collection_filter_links', array(
+          'label' => $label,
+          'collection_filter_terms' => $terms,
+          'collection_id' => $vars['bean']->bid,
+          'image' => $image,
+          'multiple' => $multiple
+        ));
+      }
+      else {
+        $vars['content']['filters'][$key]['#markup'] = theme('collection_filter_links_single', array(
+          'label' => $label,
+          'collection_filter_terms' => $terms,
+          'collection_id' => $vars['bean']->bid,
+          'image' => $image,
+          'multiple' => $multiple
+        ));
+      }
+    }
+
+    if (!empty($types)) {
+      // Add all items to output
+      $vars['content']['items']['all'] = _express_collections_bundle_category_query($types, array_keys($tids), $summary);
+      $vars['content']['items']['all']['#prefix'] = '<div class="collection-items" id="' . $anchor .'all"><h3 class="element-invisible">All</h3><div class="clear clearfix row">';
+      $vars['content']['items']['all']['#suffix'] = '</div></div>';
+
+      // Add categories of items to output.
+      // Only do separate groups if there are more than 2 categories selected
+
+      // Add wrapper for collections to give specificity to selectors
+      $vars['collection']['filter_effect'] = $filter_effect;
+      $vars['collection']['collection_id'] = $vars['bean']->bid;
+      $vars['content']['#prefix'] = '<div id="collection-' . $vars['bean']->bid. '" class="collection-filter-effect-' . $filter_effect . '">';
+      $vars['content']['#suffix'] = '</div>';
+    }
+    else {
+      if (user_access('administer collection_type vocabulary terms')) {
+        $vars['content'] = array();
+        $vars['content']['items']['#markup'] = '<div class="messages warning">The collection type is missing. It is possible the term has been deleted from the collection type vocabulary.</div>';
+      }
+    }
+  }
+}
+
+function _express_collections_bundle_clean_string($string) {
+   $string = str_replace(' ', '-', $string); // Replaces all spaces with hyphens.
+   //Lowercase
+   $string = strtolower($string);
+   return preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
+}
+
+/**
+ * Query function for getting collection item nodes.
+ */
+function _express_collections_bundle_category_query($types, $category = NULL, $summary = FALSE) {
+  $query = db_select('node', 'n');
+  $query->condition('n.type', 'collection_item', '=');
+  $query->condition('n.status', 1, '=');
+  $query->fields('n', array('nid', 'title', 'sticky', 'created'));
+
+  // Types
+  $query->join('field_data_field_collection_type', 'type', 'n.nid = type.entity_id');
+  $query->fields('type', array('field_collection_type_tid'));
+  $query->condition('type.field_collection_type_tid', $types, 'in');
+
+  // Categories
+  $query->join('field_data_field_collection_category', 'category', 'n.nid = category.entity_id');
+  $query->fields('category', array('field_collection_category_tid'));
+
+  $query->orderBy('sticky', 'DESC');
+  $query->orderBy('title', 'ASC');
+  $query->distinct();
+  $query->groupBy('n.nid');
+  $nids = $query->execute()->fetchCol();
+  $nodes = node_load_multiple($nids);
+
+  foreach ($nodes as $key => $node) {
+    $nodes[$key]->heading_tag['#tag'] = 'h3';
+  }
+  // Set to grid view mode
+  $items = node_view_multiple($nodes, 'grid');
+
+  // Remove summary if it set to be hidden
+  if (!$summary) {
+    foreach ($items['nodes'] as $nid => $item) {
+      if (!empty($items['nodes'][$nid]['field_collection_body'])) {
+        unset($items['nodes'][$nid]['field_collection_body']);
+      }
+      if (!empty($items['nodes'][$nid]['field_collection_preview'])) {
+        unset($items['nodes'][$nid]['field_collection_preview']);
+      }
+    }
+  }
+  return $items;
+}
+
+/**
+ * Allowed values function for collection grid filter setting.
+ */
+function express_collections_bundle_filter_options() {
+  $options = array(
+    'links' => 'Links',
+  );
+  return $options;
+}
+
+/*
+ * Implements hook_secure_permissions
+ *
+ * Adding permissions for collection grid bean
+ */
+function express_collections_bundle_secure_permissions($role) {
+  $permissions = array(
+    'anonymous user' => array(
+      'view any collection_grid bean',
+    ),
+    'authenticated user' => array(
+      'view any collection_grid bean',
+    ),
+    'administrator' => array(
+      'create any collection_grid bean',
+      'delete any collection_grid bean',
+      'edit any collection_grid bean',
+      'view any collection_grid bean',
+      'administer collection_categories vocabulary terms',
+      'administer collection_type vocabulary terms',
+      'create collection_item content',
+      'delete any collection_item content',
+      'delete own collection_item content',
+      'edit any collection_item content',
+      'edit own collection_item content',
+    ),
+    'developer' => array(
+      'create any collection_grid bean',
+      'delete any collection_grid bean',
+      'edit any collection_grid bean',
+      'view any collection_grid bean',
+      'administer collection_categories vocabulary terms',
+      'administer collection_type vocabulary terms',
+      'create collection_item content',
+      'delete any collection_item content',
+      'delete own collection_item content',
+      'edit any collection_item content',
+      'edit own collection_item content',
+    ),
+    'edit_my_content' => array(
+      'view any collection_grid bean',
+      'edit own collection_item content',
+    ),
+    'edit_only' => array(
+      'edit any collection_grid bean',
+      'view any collection_grid bean',
+      'edit any collection_item content',
+    ),
+    'site_editor' => array(
+      'create any collection_grid bean',
+      'delete any collection_grid bean',
+      'edit any collection_grid bean',
+      'view any collection_grid bean',
+      'administer collection_categories vocabulary terms',
+      'administer collection_type vocabulary terms',
+      'create collection_item content',
+      'delete any collection_item content',
+      'delete own collection_item content',
+      'edit any collection_item content',
+      'edit own collection_item content',
+    ),
+    'site_owner' => array(
+      'create any collection_grid bean',
+      'delete any collection_grid bean',
+      'edit any collection_grid bean',
+      'view any collection_grid bean',
+      'administer collection_categories vocabulary terms',
+      'administer collection_type vocabulary terms',
+      'create collection_item content',
+      'delete any collection_item content',
+      'delete own collection_item content',
+      'edit any collection_item content',
+      'edit own collection_item content',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}
+
+/**
+ * Implements hook_express_help()
+ *
+ * Add contextual help for the collections functionality.
+ *
+ * @param $variables
+ *   Array with information about help hooks
+ * @return $variables
+ */
+function express_collections_bundle_express_help($variables) {
+
+  $variables['node/add/collection-item'][] = array(
+    'title' => 'Collection Item tutorial',
+    'short_title' => 'Collections tutorial',
+    'url' => '/node/1380',
+    'module' => 'express_collections_bundle',
+  );
+
+  $variables['block/add/collection-grid'][] = array(
+    'title' => 'Collection Grid tutorial',
+    'short_title' => 'Collection Grid tutorial',
+    'url' => '/node/1382',
+    'module' => 'express_collections_bundle',
+  );
+
+  return $variables;
+}
+/** Implements hook_form_FORM_ID_alter().
+ *
+ * Add validation function to term edit form.
+*/
+function express_collections_bundle_form_taxonomy_form_term_alter(&$form, &$form_state, $form_id) {
+ $form['relations']['#access'] = FALSE;
+}
+
+/**
+* Implements hook_form_FORM_ID_alter().
+*
+* Add validation function to terms overview form.
+*/
+function express_collections_bundle_form_taxonomy_overview_terms_alter(&$form, &$form_state, $form_id) {
+ if ($form['#vocabulary']->machine_name == 'collection_categories') {
+   $form['#validate'][] = 'express_collections_bundle_taxonomy_overview_form_validate';
+ }
+}
+
+/**
+ * Validation function for cu_article_form_taxonomy_overview_terms_alter().
+ *
+ * Prevents user from exceeding maximum depth on taxonomy terms.
+ */
+function express_collections_bundle_taxonomy_overview_form_validate($form, &$form_state) {
+  taxonomy_terms_static_reset();
+  $limit = 0;
+  foreach ($form_state['input'] as $key => $term) {
+    if (!empty($term['depth']) && $term['depth'] > $limit && (substr($key, 0, 3) == 'tid')) {
+      $error_link = l('This change', NULL, array(
+        'external' => TRUE,
+        'fragment' => 'edit-tid' . $term['tid'] . '0-edit'
+      ));
+      form_set_error($key . '[depth]', t('!change has caused the taxonomy to exceed its maximum depth of 1 levels.', array('!change' => $error_link)));
+
+    }
+  }
+}
+
+function express_collections_bundle_preprocess_node(&$vars) {
+  if ($vars['type'] == 'collection_item') {
+    $categories = array();
+    foreach ($vars['field_collection_category'][LANGUAGE_NONE] as $category) {
+      $term = taxonomy_term_load($category['tid']);
+      $categories[] = 'collection-category-' . _express_collections_bundle_clean_string($term->name);
+    }
+    $vars['category_classes'] = join(' ', $categories);
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function express_collections_bundle_theme(&$existing, $type, $theme, $path) {
+  $registry = array();
+  $template_dir = drupal_get_path('module', 'express_collections_bundle') . '/templates';
+  $registry['collection_filter_wrapper'] = array(
+    'template' => 'collection-filter-wrapper',
+    'path' => $template_dir,
+    'render element' => 'elements',
+  );
+  $registry['collection_filter_links'] = array(
+    'template' => 'collection-filter-links',
+    'path' => $template_dir,
+    'render element' => 'elements',
+  );
+  $registry['collection_filter_links_single'] = array(
+    'template' => 'collection-filter-links-single',
+    'path' => $template_dir,
+    'render element' => 'elements',
+  );
+  $registry['collection_item_wrapper'] = array(
+    'template' => 'collection-item-wrapper',
+    'path' => $template_dir,
+    'render element' => 'elements',
+  );
+
+  return $registry;
+}
+
+function express_collections_bundle_form_bean_form_alter(&$form, &$form_state, $form_id) {
+ if ($form['bean']['#value']->type == 'collection_grid') {
+   $form['#validate'][] = 'express_collections_bundle_form_validate';
+   $form['field_collection_grid_category']['#access'] = FALSE;
+   $form['field_collection_filter_type']['#access'] = FALSE;
+ }
+}
+
+function express_collections_bundle_form_validate($form, &$form_state) {
+  $category_sets = $form_state['values']['field_collection_grid_categories'][LANGUAGE_NONE];
+  unset($category_sets['add_more']);
+  if (count($category_sets) > 1) {
+    foreach ($category_sets as $key => $set) {
+      if (empty($set['field_collection_grid_label'][LANGUAGE_NONE][0]['value'])) {
+        form_set_error('field_collection_grid_categories', t('Collection Grids with more than one filter set require each set has a label.'));
+      }
+    }
+  }
+}

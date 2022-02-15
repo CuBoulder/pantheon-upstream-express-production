@@ -1,0 +1,15 @@
+name = Alumni Class Notes
+core = 7.x
+package = Alumni Class Notes
+description = The Class Note Bundle allows you to create alumni profiles to make it easy for your visitors to view and search for alums by year.
+dependencies[] = cu_class_notes
+bundle_group = addon_bundles
+version = 7.x-1.1
+project = cu_alumni_class_notes_bundle
+project status url = https://github.com/CuBoulder/cu_alumni_class_notes_bundle
+project_demo_url = https://websupport.colorado.edu/category/147-class-notes
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

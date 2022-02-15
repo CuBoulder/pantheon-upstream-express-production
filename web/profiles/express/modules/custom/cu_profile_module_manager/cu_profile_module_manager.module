@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * Alters grouping in admin/modules for CU specific sites.
+ * @file
+ */
+
+
+/**
+ * Implementes hook_theme().
+ */
+function cu_profile_module_manager_theme() {
+  $registry = array();
+  $template_dir = drupal_get_path('module', 'cu_profile_module_manager') . '/templates';
+  $registry['express_bundle'] = array(
+    'template' => 'express-bundle',
+    'path' => $template_dir,
+    'render element' => 'elements',
+  );
+  return $registry;
+}
+
+/**
+ * Implements hook_secure_permissions.
+ */
+function cu_profile_module_manager_secure_permissions($role) {
+  $permissions = array(
+    'administrator' => array(
+      'skip bundle request step',
+    ),
+    'developer' => array(
+      'skip bundle request step',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}

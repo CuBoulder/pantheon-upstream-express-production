@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function cu_funnel_page_menu() {
+  $items = array();
+  $items['admin/settings/campaign'] = array(
+    'title' => 'Campaign',
+    'description' => 'Configuration Options for Digital Campaigns',
+    'position' => 'right',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer express settings'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/settings/campaign/funnel-pages'] = array(
+    'title' => 'Funnel Pages',
+    'description' => 'Configure pages on your site to be used as a funnel page to direct users towards a certain goal or action.',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cu_funnel_page_form'),
+    'access arguments' => array('administer express settings'),
+    'weight' => 1,
+  );
+  return $items;
+}
+
+/**
+ * Implements module_preprocess_html().
+ */
+function cu_funnel_page_preprocess_html(&$vars) {
+  $dead_end = FALSE;
+  global $base_url;
+  $dead_end_pages = variable_get('cu_funnel_pages', NULL);
+  $dead_end_pages = str_replace(',', PHP_EOL, $dead_end_pages);
+  $dead_end_pages = explode(PHP_EOL, $dead_end_pages);
+  $dead_end_pages = array_map('trim', $dead_end_pages);
+  $current = current_path();
+  // See if the current node/path is listed.
+  if (in_array($current, $dead_end_pages) || in_array(drupal_get_path_alias(), $dead_end_pages) || in_array($base_url . '/' . drupal_get_path_alias(), $dead_end_pages)) {
+    $dead_end = TRUE;
+  }
+  // If not, check to see if any of the paths contain wildcards.
+  else {
+    foreach ($dead_end_pages as $page) {
+      if (strpos($page, '*') !== FALSE) {
+        $wildcard = explode('*', $page);
+        if (strpos($base_url . '/' . drupal_get_path_alias(), $wildcard[0]) !== FALSE) {
+          $dead_end = TRUE;
+          break;
+        }
+      }
+    }
+  }
+  // Add css for dead end page if condition was met.
+  if ($dead_end) {
+    $vars['classes_array'][] = 'cu-funnel-page';
+    drupal_add_css(drupal_get_path('module', 'cu_funnel_page') . '/css/cu-funnel-page-bundle.css');
+  }
+}
+
+/**
+ * Implements hook_form().
+ */
+function cu_funnel_page_form($form, &$form_state) {
+  $form['description'] = array(
+    '#type' => 'markup',
+    '#markup' => '<p>
+    Funnel pages have no main, secondary, or footer menus, search, or breadcrumbs. <em>Users will have a difficult time navigating your site from any of the pages listed here.</em>
+    </p>',
+  );
+  $form['cu_funnel_pages'] = array(
+    '#type' => 'textarea',
+    '#title' => 'Paths',
+    '#default_value' => variable_get('cu_funnel_pages', ''),
+    '#description' => 'Add a list of paths or urls. You can use the * character (asterisk) as a wildcard.',
+  );
+  $form = system_settings_form($form);
+  return $form;
+}

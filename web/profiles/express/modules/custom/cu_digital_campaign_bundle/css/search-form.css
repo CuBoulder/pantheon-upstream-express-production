@@ -1,0 +1,10 @@
+#embed-templates-overview-form #edit-search .form-item {
+    float: left;
+    padding: 0.5em 1em 0 0;
+}
+
+#embed-templates-overview-form #edit-search .form-submit {
+    content: "";
+    display: table;
+    clear: both;
+}

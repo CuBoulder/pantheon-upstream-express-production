@@ -1,0 +1,204 @@
+<?php
+/**
+ * @file
+ * Code for the Section Page feature.
+ */
+
+include_once 'cu_section_page_bundle.features.inc';
+
+/**
+ * Implements hook_libraries_info().
+ */
+function cu_section_page_bundle_libraries_info() {
+  $libraries = array();
+  $libraries['waypoints'] = array(
+    'name' => t('Waypoints'),
+    'vendor url' => 'http://imakewebthings.com/waypoints/',
+    'download url' => 'https://github.com/imakewebthings/waypoints',
+    'version' => '0.7.0',
+    'files' => array(
+      'js' => array(
+        'waypoint.js' => array(),
+      ),
+    ),
+  );
+  $libraries['animate_css'] = array(
+    'name' => t('Animate.CSS'),
+    'vendor url' => 'http://daneden.github.io/animate.css',
+    'download url' => 'http://daneden.github.io/animate.css',
+    'version' => '0.7.0',
+    'files' => array(
+      'css' => array(
+        'animate.css' => array(),
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+function cu_section_page_bundle_page_alter(&$page) {
+  // Remove sidebars
+  $node = menu_get_object();
+  if ($node && $node->type =='section_page') {
+    unset($page['sidebar_first']);
+    unset($page['sidebar_second']);
+  }
+}
+
+function cu_section_page_bundle_preprocess_page(&$vars) {
+  if (!empty($vars['node'])) {
+    $type = $vars['node']->type;
+  }
+  else {
+    $type = '';
+  }
+  if ($type == 'section_page' && !path_is_admin(current_path())) {
+
+      $vars['theme_hook_suggestions'][] = 'page__type__' . $type;
+      // Is the library installed?
+      $path = libraries_get_path('waypoints') . '/waypoint.js';
+      $installed = file_exists($path);
+      if (!$installed) {
+        return;
+      }
+      // Add the library reference.
+      drupal_add_js($path, array(
+        'group' => JS_LIBRARY,
+        'every_page' => TRUE,
+      ));
+      $installed = file_exists($path);
+      if (!$installed) {
+        return;
+      }
+      $path = libraries_get_path('animate_css') . '/animate.css';
+      drupal_add_css($path);
+
+      if (!empty($vars['node']->field_section_page_size) && ($vars['node']->field_section_page_size[LANGUAGE_NONE][0]['value'] == 1)) {
+        $vars['classes_array'][] = 'section-page-size-full';
+      }
+
+      if (!empty($vars['node']->field_section_page_navigation) && ($vars['node']->field_section_page_navigation[LANGUAGE_NONE][0]['value'] == 1)) {
+        $vars['classes_array'][] = 'section-page-navigation-active';
+      }
+
+      if (!empty($vars['node']->field_section_page_hide_title) && ($vars['node']->field_section_page_hide_title[LANGUAGE_NONE][0]['value'] == 1)) {
+        $vars['classes_array'][] = 'section-page-hide-title';
+      }
+
+  }
+}
+
+function cu_section_page_bundle_secure_permissions($role) {
+   $permissions = array(
+    'administrator' => array(
+      'create section_page content',
+      'delete any section_page content',
+      'delete own section_page content',
+      'edit any section_page content',
+      'edit own section_page content',
+    ),
+    'anonymous user' => array(),
+    'authenticated user' => array(),
+    'edit_only_temp' => array(
+      'edit any section_page content',
+      'edit own section_page content',
+    ),
+    'developer' => array(
+      'create section_page content',
+      'delete any section_page content',
+      'delete own section_page content',
+      'edit any section_page content',
+      'edit own section_page content',
+    ),
+    'edit_my_content' => array(
+      'edit own section_page content',
+    ),
+    'edit_only' => array(
+      'edit any section_page content',
+    ),
+    'site_editor' => array(
+      'create section_page content',
+      'delete any section_page content',
+      'delete own section_page content',
+      'edit any section_page content',
+      'edit own section_page content',
+    ),
+    'site_owner' => array(
+      'create section_page content',
+      'delete any section_page content',
+      'delete own section_page content',
+      'edit any section_page content',
+      'edit own section_page content',
+    ),
+    'site_editor' => array(
+      'create section_page content',
+      'delete any section_page content',
+      'delete own section_page content',
+      'edit any section_page content',
+      'edit own section_page content',
+    ),
+  );
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}
+
+function cu_section_page_bundle_theme_registry_alter(&$theme_registry) {
+  $module_path = drupal_get_path('module', 'cu_section_page_bundle');
+  $theme_registry_copy = $theme_registry;
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'theme', $module_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+  $hooks = array('theme');
+  foreach ($hooks as $h) {
+	  if (isset($theme_registry[$h]['theme paths'])) {
+	    $first_element = array_shift($theme_registry[$h]['theme paths']);
+	    array_unshift($theme_registry[$h]['theme paths'], array_shift($theme_registry[$h]['theme paths']), $module_path);
+  	}
+  }
+}
+
+/*
+ * Implements hook_preprocess_entity().
+ * prepares nodes for tpl output.
+ *
+ */
+function cu_section_page_bundle_preprocess_node(&$vars) {
+  if ($vars['node']->type == 'section_page') {
+    $sections = array();
+    foreach ($vars['field_section_page_sections'] as $section) {
+      if (!empty($section['entity']->title)) {
+        $id = $section['target_id'];
+        $sections[$id] = $section['entity']->title;
+      }
+    }
+    $vars['section_page_labels'] = $sections;
+
+  }
+}
+
+/**
+ * Implements hook_block_unused_beans.
+ *
+ * Report beans that are referenced by section pages.
+ */
+function cu_section_page_bundle_block_unused_beans($vars) {
+
+  $vars['Section Page']['field_data_field_section_page_sections'] = array(
+    'table' => 'field_data_field_section_page_sections',
+    'column' => 'field_section_page_sections_target_id',
+  );
+  return $vars;
+}
+
+/**
+ *  Implements hook_form_FORM_ID_alter.
+ *
+ * Set create menu item to true on new nodes.
+ */
+function cu_section_page_bundle_form_section_page_node_form_alter(&$form, &$form_state, $form_id) {
+  // Only do this for new nodes
+  if ($form['nid']['#value'] == NULL) {
+    $form['menu']['enabled']['#default_value'] = TRUE;
+  }
+}

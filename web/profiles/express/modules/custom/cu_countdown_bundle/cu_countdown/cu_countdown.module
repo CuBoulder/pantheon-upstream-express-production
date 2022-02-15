@@ -1,0 +1,141 @@
+<?php
+
+/**
+ * Implements hook_page_alter().
+ */
+function cu_countdown_page_alter(&$page) {
+  drupal_add_js(drupal_get_path('module', 'cu_countdown') . '/js/jquery.countdown.min.js');
+
+  drupal_add_css(drupal_get_path('module', 'cu_countdown') . '/css/cu-countdown.css');
+}
+
+/**
+ * Implements hook_shortcode_info.
+ */
+function cu_countdown_shortcode_info() {
+  $shortcodes = array();
+  $shortcodes['countdown'] = array(
+    'title' => t('Countdown'),
+    'description' => t('A countdown to a specific date.'),
+    'process callback' => 'cu_countdown_countdown',
+    'tips callback' => 'cu_countdown_countdown_tips',
+    'default settings' => array(),
+  );
+  return $shortcodes;
+}
+
+/**
+ * Countdown shortcode function.
+ */
+function cu_countdown_countdown($attrs, $content = NULL) {
+  extract(shortcode_attrs(array(
+    'style' => 'stacked',
+    'background' => 'transparent',
+    'align' => 'none',
+    'size' => 'regular',
+  ), $attrs));
+  // MM/DD/YYYY hh:mm:ss
+
+  // Accessible Markup
+  if (!$content) {
+    $accessible_content = 'Countdown until ' . date("F j, Y, g:i a");
+    $date = date('m/d/Y H:i:s');
+  } else {
+    $accessible_content = 'Countdown until ' . date("F j, Y, g:i a", strtotime($content));
+    $date = $content;
+  }
+  $output = '<div class="accessible-countdown element-invisible">' . $accessible_content . '</div>';
+
+  // Determine granularity
+  $parts = array();
+  $time_parts = array();
+  $parts = explode(' ', $date);
+  if (isset($parts[1])) {
+    $time_parts = explode(':', $parts[1]);
+  }
+
+  // Build granularity class
+  $granularity = array();
+  $granularity[] = 'countdown';
+  $granularity[] = isset($parts[0]) ? 'days' : NULL;
+  $granularity[] = isset($time_parts[0]) ? 'hours' : NULL;
+  $granularity[] = isset($time_parts[1]) ? 'minutes' : NULL;
+  $granularity[] = isset($time_parts[2]) ? 'seconds' : NULL;
+  $granularity = join('-', $granularity);
+
+  $countdown_id = mt_rand();
+  $classes = array();
+  $classes[] = 'countdown countdown-' . $style;
+  $classes[] = 'countdown-' . $background;
+  $classes[] = 'countdown-' . $align;
+  $classes[] = 'countdown-' . $size;
+  $classes[] = $granularity;
+  $classes = join(' ', $classes);
+  // Markup
+  $output .= '<div id="countdown-' . $countdown_id .'" class="' . $classes . '">
+                <div class="countdown-days">
+                  <span class="countdown-value"></span><span class="countdown-label">days</span>
+                </div>';
+  if (!empty($parts[1])) {
+    $output .='<div class="countdown-bottom">';
+
+    if (isset($time_parts[0])) {
+                $output .= '<div class="countdown-hours">
+                  <span class="countdown-value"></span><span class="countdown-label">hours</span>
+                </div>';
+    }
+    if (isset($time_parts[1])) {
+                $output .= '<div class="countdown-minutes">
+                  <span class="countdown-value"></span><span class="countdown-label">minutes</span>
+                </div>';
+    }
+    if (isset($time_parts[2])) {
+      $output .= '<div class="countdown-seconds">
+                    <span class="countdown-value"></span><span class="countdown-label">seconds</span>
+                  </div>';
+    }
+    $output .= '</div>';
+  }
+
+  $output .= '</div>';
+
+  // Correct time if no minutes/hours
+  if (isset($parts[1]) && isset($time_parts[0]) && !isset($time_parts[1])) {
+    $content .= ':00';
+  }
+
+  // Start script
+  $output .= '<script type="text/javascript">';
+  // JS functions
+  $output .= '(function( $ ){
+      $("#countdown-' . $countdown_id . '").countdown("' . $content . '", function(event) {
+        $("#countdown-' . $countdown_id . '  .countdown-days span.countdown-value").html(event.strftime("%-D"));
+        $("#countdown-' . $countdown_id . ' .countdown-hours span.countdown-value").html(event.strftime("%-H"));
+        $("#countdown-' . $countdown_id . ' .countdown-minutes span.countdown-value").html(event.strftime("%-M"));
+        $("#countdown-' . $countdown_id . ' .countdown-seconds span.countdown-value").html(event.strftime("%-S"));
+      });
+    })( jQuery );';
+  // End script
+  $output .= '</script>';
+  return $output;
+}
+
+/**
+ * Countdown shortcode tips.
+ */
+function cu_countdown_countdown_tips($format, $long) {
+  $output = '[countdown]MM/DD/YYYY hh:mm:ss[/countdown]';
+  return $output;
+}
+
+/**
+ * Implements hook_filter_info_alter().
+ */
+function cu_countdown_filter_info_alter(&$info) {
+  // Load the wysiwyg text format
+    $format = filter_format_load('wysiwyg');
+    // Get the filters on the wysiwyg text format
+    $filters = filter_list_format($format->format);
+    // Enable countdown shortcode
+    $filters['shortcode']->settings['countdown'] = 1;
+}

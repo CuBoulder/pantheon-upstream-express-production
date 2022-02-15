@@ -1,0 +1,48 @@
+@mixin element-invisible {
+  border: 0;
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute !important;
+  width: 1px;
+  white-space: nowrap;
+}
+$blue: #007BC8;
+
+.localist-wrapper > ul,
+.localist-wrapper > ul > li {
+  list-style: none;
+  list-style-image: none;
+  margin: 0;
+  padding: 0;
+}
+.localist-events {
+  ul#lwe {
+    padding-left:0;
+  }
+  #lw {
+    background:none;
+  }
+  .localist_minicalendar_page_heading {
+    font-weight: bold;
+  }
+  ol.event-list {
+    overflow: hidden;
+  }
+}
+
+table.localist_minicalendar_minicalendar caption {
+  @include element-invisible;
+}
+
+
+@media screen and (min-width:768px) {
+  .localist-combo.localist-layout-horizontal {
+    margin:0 -20px;
+    display:flex;
+    flex-direction: row-reverse;
+    & > div {
+      padding:0 20px;
+    }
+  }
+}

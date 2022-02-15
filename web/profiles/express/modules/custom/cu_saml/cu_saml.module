@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * Sets up simplesamlphp_auth for Express sites.
+ * @file
+ */
+
+include_once 'cu_saml.features.inc';
+
+/**
+ * Define site permissions in code.
+ *
+ * Create a secure_permissions_data module directory and place this function
+ * in secure_permissions_data.module.
+ *
+ * @param $role
+ *   The role for which the permissions are being requested.
+ *
+ * @return
+ *   An array defining all the permissions for the site.
+ */
+
+function cu_saml_secure_permissions($role) {
+  $permissions = array(
+    'developer' => array(
+      'administer simpleSAMLphp authentication',
+    ),
+  );
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}
+
+/**
+ * Implements hook_user_login().
+ *
+ * Get saml display name and save it to user to use as real name display.
+ */
+function cu_saml_user_login(&$edit, $account) {
+  global $_simplesamlphp_auth_saml_attributes;
+  $values['display_name'] = $_simplesamlphp_auth_saml_attributes['urn:oid:2.16.840.1.113730.3.1.241'];
+  $values['last_name'] = $_simplesamlphp_auth_saml_attributes['urn:oid:2.5.4.4'];
+  $values['primary_affiliation'] = !empty($_simplesamlphp_auth_saml_attributes['urn:oid:1.3.6.1.4.1.5923.1.1.1.1']) ? $_simplesamlphp_auth_saml_attributes['urn:oid:1.3.6.1.4.1.5923.1.1.1.1'] : NULL;
+  _set_user_display_name($account, $values);
+}
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Redirects users to the federated login page at /saml_login.
+ */
+function cu_saml_menu_alter(&$items) {
+  $items['user']['page callback'] = 'drupal_goto';
+  $items['user']['page arguments'] = array('saml_login');
+}
+
+/**
+ * Sets the user display name from saml info.
+ */
+function _set_user_display_name($account, $values) {
+  // Update account fields.
+  $edit = array();
+  $edit['field_saml_display_name'][LANGUAGE_NONE][0]['value'] = $values['display_name'];
+  $edit['field_saml_last_name'][LANGUAGE_NONE][0]['value'] = $values['last_name'];
+  $edit['field_saml_primary_affiliation'][LANGUAGE_NONE][0]['value'] = $values['primary_affiliation'][0];
+
+  user_save($account, $edit);
+}

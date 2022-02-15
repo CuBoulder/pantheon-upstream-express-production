@@ -1,0 +1,165 @@
+<?php
+
+/**
+ * @file
+ * Provides statistics reporting for Express web sites.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function express_site_metrics_menu() {
+  $items['admin/config/express/metrics'] = array(
+    'title' => 'Express Site Metrics',
+    'page callback' => 'express_site_metrics_pretty_print',
+    'access arguments' => array('administer modules'),
+  );
+
+  $items['express/metrics/json'] = array(
+    'title' => 'Express Site Metrics JSON endpoint',
+    'access callback' => 'express_site_metrics_access',
+    'page callback' => 'express_site_metrics_json',
+  );
+
+  $items['admin/config/express/metrics/token'] = array(
+    'title' => 'Generate a new token for Express site metrics access.',
+    'description' => 'Express uses Json Web Tokens to authenticate 3rd party services.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('express_site_metrics_generate_token_form'),
+    'access arguments' => array('administer modules'),
+  );
+
+  $items['admin/config/express/metrics/show-token'] = array(
+    'title' => 'Your new token for Express site metrics access.',
+    'description' => 'New Json Web Token',
+    'page callback' => 'express_site_metrics_show_token',
+    'access arguments' => array('administer modules'),
+  );
+
+  return $items;
+}
+
+/**
+ * Returns json site metrics data.
+ *
+ * If there is a valid token in the request headers data connectin is allowed.
+ *
+ * @return bool
+ *   User can or canno access this endpoint.
+ */
+function express_site_metrics_access() {
+
+  if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+    $variableDb = new VariableController();
+    $tokenHandler = new TokenHandler($variableDb, $_SERVER);
+    return $tokenHandler->validateToken();
+  }
+
+  return FALSE;
+}
+
+/**
+ * Build a json response with metrics data.
+ */
+function express_site_metrics_json() {
+  drupal_add_http_header('Status', 200, TRUE);
+  drupal_add_http_header('Content-Type', 'application/json');
+
+  // Right now (5/2021) this method uses code from atlas_statistics.module.
+  // That module already created a hook for gathering desired data and I just
+  // used it. If and when we decide to change data gathered for site metrics we
+  // can implement similar code in this module.
+  $metrics = SiteMetricsInspector::makeReport('module_invoke_all', 'atlas_statistics');
+  echo $metrics;
+}
+
+/**
+ * Pretty prints site metrics data to screen.
+ */
+function express_site_metrics_pretty_print() {
+  $jsonSiteMetricsData = SiteMetricsInspector::makeReport('module_invoke_all', 'atlas_statistics', TRUE);
+  return [
+    'content' => [
+      '#type' => 'markup',
+      '#markup' => "<pre style=\"background-color: AliceBlue; padding: 8px; white-space: pre-wrap; word-break: keep-all;\">$jsonSiteMetricsData</pre>",
+    ],
+  ];
+}
+
+/**
+ * Creates a form for a user to create a new Json Web Token. If ever needed.
+ */
+function express_site_metrics_generate_token_form($form, &$form_state) {
+
+  $form['fieldset'] = [
+    '#type' => 'fieldset',
+    '#title' => 'Set User Id for New Token',
+  ];
+
+  $form['fieldset']['userId'] = [
+    '#title' => 'User Id',
+    '#type' => 'textfield',
+    '#default_value' => 'a short user id',
+    '#required' => TRUE,
+  ];
+
+  $form['fieldset']['submit'] = [
+    '#type' => 'submit',
+    '#value' => 'Submit',
+  ];
+
+  $form['#submit'][] = 'express_site_metrics_generate_token';
+  $form['#method'][] = 'POST';
+  return $form;
+}
+
+/**
+ * Validate UserId. Generate a new token.
+ */
+function express_site_metrics_generate_token() {
+  $userId = $_POST['userId'];
+  $tokenHandler = new TokenHandler(new VariableController(), []);
+
+  if ($userId) {
+    $token = $tokenHandler->generateToken($userId);
+
+    $query = ['metricsToken' => $token, 'userId' => $userId];
+    drupal_goto('/admin/config/express/metrics/show-token', ['query' => $query]);
+  }
+}
+
+/**
+ * Shows a newly created JWT.
+ */
+function express_site_metrics_show_token() {
+  if ($_GET['metricsToken'] && $_GET['userId']) {
+    $metricsToken = $_GET['metricsToken'];
+    $userId = $_GET['userId'];
+
+    $content = "
+      <style>
+        .tokenLi {padding: 8px;}
+        .tokenLi span {padding: 4px; background-color: AliceBlue;}
+      </style>
+      <div style=\"width: 75%; margin: 0 auto;\">
+        <ul>
+          <li class=\"tokenLi\">UserId: <span>$userId</span></li>
+          <li class=\"tokenLi\">Token: <span>$metricsToken</span></li>
+          <li class=\"tokenLi\"><a href=\"/admin/config/express/metrics/token\">go back</a></li></div>
+    ";
+    return [
+      'content' => [
+        '#type' => 'markup',
+        '#markup' => $content,
+      ],
+    ];
+  }
+  else {
+    return [
+      'content' => [
+        '#type' => 'markup',
+        '#markup' => "<p style=\"messages warning\">Oops! For some reason your new token cannot be displayed.</p><div><a href=\"/admin/express/metrics/token\">go back</a></div>",
+      ],
+    ];
+  }
+}

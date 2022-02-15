@@ -1,0 +1,14 @@
+name = Slate
+description = Adds embed templates for embedding Slate forms
+core = 7.x
+package = Express-Slate
+version = 7.x-1.3
+project = express_slate_bundle
+
+dependencies[] = et_slate_form
+dependencies[] = et_slate_form_bean
+
+bundle_cache_clear = 1
+
+bundle_roles[] = developer
+bundle_roles[] = administrator

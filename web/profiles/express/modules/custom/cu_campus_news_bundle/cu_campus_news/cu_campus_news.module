@@ -1,0 +1,751 @@
+<?php
+/**
+ * @file
+ * Code for the Campus News feature.
+ */
+
+include_once 'cu_campus_news.features.inc';
+
+
+/**
+* Implements hook_flush_caches().
+*/
+function cu_campus_news_flush_caches() {
+  return array('cu_campus_news');
+}
+
+function cu_campus_news_menu() {
+  $items = array();
+  $items['admin/config/system/cu-campus-news'] = array(
+    'title' => 'CU Campus News',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cu_campus_news_config_form'),
+    'access arguments' => array('administer campus news'),
+    'weight' => 8,
+    'description' => 'Settings for campus news block.',
+  );
+  return $items;
+}
+
+function cu_campus_news_config_form($form, &$form_state) {
+  $form = array();
+
+  $form['cu_campus_news_url'] = array(
+    '#type' => 'textfield',
+    '#title' => 'URL of Campus News Site',
+    '#default_value' => variable_get('cu_campus_news_url', 'http://www.colorado.edu/today'),
+    '#required' => TRUE,
+    '#description' => t('Full URL of campus news web site. i.e. http://www.colorado.edu/today'),
+  );
+
+  $form['cu_campus_news_unit_path'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Unit End Point',
+    '#default_value' => variable_get('cu_campus_news_unit_path', 'syndicate/article/options/syndication_unit'),
+    '#required' => TRUE,
+    '#description' => t('Path to feed of unit options. i.e. syndicate/article/options/syndication_unit'),
+  );
+
+  $form['cu_campus_news_audience_path'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Audience End Point',
+    '#default_value' => variable_get('cu_campus_news_audience_path', 'syndicate/article/options/syndication_audience'),
+    '#required' => TRUE,
+    '#description' => t('Path to feed of audience options. i.e. syndicate/article/options/syndication_audience'),
+  );
+
+  $form['cu_campus_news_category_path'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Category End Point',
+    '#default_value' => variable_get('cu_campus_news_category_path', 'syndicate/article/options/category'),
+    '#required' => TRUE,
+    '#description' => t('Path to feed of category options. i.e. syndicate/article/options/category'),
+  );
+
+  $form['cu_campus_news_link_text'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Campus News Link Text',
+    '#default_value' => variable_get('cu_campus_news_link_text', 'Read more at CU Boulder Today'),
+    '#required' => TRUE,
+    '#description' => t('Text of the link to the campus news website'),
+  );
+  $form['cu_campus_news_link_path'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Campus News Link Path',
+    '#default_value' => variable_get('cu_campus_news_link_path', 'syndicate/article/read'),
+    '#required' => TRUE,
+    '#description' => t('Path of link results.'),
+  );
+
+  $form['actions']['cu_campus_news_reset'] = array(
+    '#type' => 'submit',
+    '#value' => t('Reset'),
+    '#weight' => 10,
+    '#submit' => array('cu_campus_news_reset'),
+  );
+
+  $form = system_settings_form($form);
+
+  return $form;
+}
+
+/**
+ * Submit function to reset configurations to default values.
+ */
+function cu_campus_news_reset() {
+  variable_set('cu_campus_news_url', 'http://www.colorado.edu/today');
+  variable_set('cu_campus_news_unit_path', 'syndicate/article/options/syndication_unit');
+  variable_set('cu_campus_news_audience_path', 'syndicate/article/options/syndication_audience');
+  variable_set('cu_campus_news_category_path', 'syndicate/article/options/category');
+  variable_set('cu_campus_news_link_text', 'Read more at CU Boulder Today');
+  variable_set('cu_campus_news_link_path', 'syndicate/article/read');
+  drupal_set_message('Campus News configurations have been reset to their default values.');
+}
+
+
+/**
+ * Allowed values function for unit options.
+ */
+function cu_campus_news_unit_values() {
+  $end_point = variable_get('cu_campus_news_url', 'http://www.colorado.edu/today') . '/' . variable_get('cu_campus_news_unit_path', 'syndicate/article/options/syndication_unit');
+
+  $response = drupal_http_request($end_point);
+  if ($response->code == '200') {
+    $options = array();
+    $terms = drupal_json_decode($response->data, true);
+    $terms2 = array();
+    foreach ($terms as $key => $term) {
+      $options[$term['tid']] = $term['name'];
+    }
+    return $options;
+  }
+}
+
+/**
+ * Allowed values function for audience options.
+ */
+function cu_campus_news_audience_values() {
+  $end_point = variable_get('cu_campus_news_url', 'http://www.colorado.edu/today') . '/' . variable_get('cu_campus_news_audience_path', 'syndicate/article/options/syndication_audience');
+
+  $response = drupal_http_request($end_point);
+  if ($response->code == '200') {
+    $options = array();
+    $terms = drupal_json_decode($response->data, true);
+    foreach ($terms as $key => $term) {
+      $options[$term['tid']] = $term['name'];
+    }
+    return $options;
+  }
+}
+
+/**
+ * Allowed values function for category options.
+ */
+function cu_campus_news_category_values() {
+  $end_point = variable_get('cu_campus_news_url', 'http://www.colorado.edu/today') . '/' . variable_get('cu_campus_news_category_path', 'syndicate/article/options/category');
+
+  $response = drupal_http_request($end_point);
+  if ($response->code == '200') {
+    $options = array();
+    $terms = drupal_json_decode($response->data, true);
+    $terms2 = array();
+    foreach ($terms as $key => $term) {
+      $terms2[$key] = (object) $term;
+    }
+    // Get terms in a nested tree
+    $terms = cu_campus_news_taxonomy_treedata($terms2);
+    // Build select options from nested tree and add all option
+    $options = cu_campus_news_nested_options($terms);
+
+    return $options;
+  }
+}
+
+/**
+ * Implements hook_preprocess_entity().
+ *
+ * Build content for campus_news bean.
+ */
+function cu_campus_news_preprocess_entity(&$vars) {
+  $entity_type = $vars['elements']['#entity_type'];
+  $bundle = $vars['elements']['#bundle'];
+  if ($vars['elements']['#bundle'] == 'campus_news') {
+
+    // create cache ID
+    $cid = 'campus_news:' . $vars['bean']->bid;
+    $end_point = variable_get('cu_campus_news_url', 'http://www.colorado.edu/today') . '/' . variable_get('cu_campus_news_syndication', 'syndicate/article');
+
+    // Create query parameters
+    $query = array();
+    // Category parameters
+    $terms = array();
+    if (!empty($vars['bean']->field_campus_news_category)) {
+      $params = $vars['bean']->field_campus_news_category[LANGUAGE_NONE];
+      foreach ($params as $param) {
+        $terms[] = $param['value'];
+      }
+      $terms = join('+', $terms);
+      $query['category'] = $terms;
+    }
+
+
+    // Audience parameters
+    $terms = array();
+    if (!empty($vars['bean']->field_campus_news_audience)) {
+      $params = $vars['bean']->field_campus_news_audience[LANGUAGE_NONE];
+      foreach ($params as $param) {
+        $terms[] = $param['value'];
+      }
+      $terms = join('+', $terms);
+      $query['audience'] = $terms;
+    }
+
+
+    // Unit parameters
+    $terms = array();
+    if (!empty($vars['bean']->field_campus_news_unit)) {
+      $params = $vars['bean']->field_campus_news_unit[LANGUAGE_NONE];
+      foreach ($params as $param) {
+        $terms[] = $param['value'];
+      }
+      $terms = join('+', $terms);
+      $query['unit'] = $terms;
+    }
+
+
+    // Display Parameters
+    $view_mode = $vars['bean']->field_campus_news_display[LANGUAGE_NONE][0]['value'];
+    $query['view_mode'] = $view_mode;
+
+    // Item Parameters
+    $items = $vars['bean']->field_campus_news_items[LANGUAGE_NONE][0]['value'];
+    $query['items'] = $items;
+
+    // Build article content end point url
+    $end_point_full = url($end_point, array('query' => $query));
+    // Build last updated end point url
+    $query['updated'] = 1;
+    $end_point_updated = url($end_point, array('query' => $query));
+
+    // Compare last updated to expire time (now - 1 hour), clear cache if so
+    $expire = time() - 60 * 60;
+    $response = drupal_http_request($end_point_updated);
+    if ($response->code == '200') {
+      $updated = drupal_json_decode($response->data, true);
+    }
+    if ($updated > $expire) {
+      cache_clear_all($cid, 'cu_campus_news');
+    }
+
+    // Get cached version if available
+    if ($cache = cache_get($cid, 'cu_campus_news')) {
+      $nodes = drupal_json_decode($cache->data, true);
+    }
+    else {
+      $response = drupal_http_request($end_point_full);
+      if ($response->code == '200') {
+        $nodes = drupal_json_decode($response->data, true);
+        // Save to cache
+        cache_set($cid, $response->data, 'cu_campus_news', time() + 60 * 60);
+      }
+    }
+
+    // If articles are returned, send to theme functions and build output
+    $vars['content'] = array();
+    if (!empty($nodes) && !isset($nodes['error'])) {
+      $output = array();
+      foreach ($nodes as $key => $node) {
+        $theme_function = 'campus_news__' . $view_mode;
+        $output[$key]['#markup'] = theme($theme_function, $node);
+      }
+      $vars['content']['articles'] = $output;
+
+      // Grid needs additional markup
+      $link_classes = array();
+      if ($view_mode == 'grid') {
+        $vars['content']['articles']['#prefix'] = '<div class="campus-news-grid row">';
+        $vars['content']['articles']['#suffix'] = '</div>';
+        $link_classes[] = 'button-ghost';
+      }
+
+      // Add link to CU Boulder Today
+      $link_text = variable_get('cu_campus_news_link_text', 'Read more at CU Boulder Today');
+      $link_url = variable_get('cu_campus_news_url', 'http://www.colorado.edu/today') . '/' . variable_get('cu_campus_news_link_path', 'syndicate/article/read');
+
+      if (!empty($query['updated'])) {
+        unset($query['updated']);
+      }
+      if (!empty($query['items'])) {
+        unset($query['items']);
+      }
+      if (!empty($query['view_mode'])) {
+        unset($query['view_mode']);
+      }
+
+      $vars['content']['cu_boulder_today_link']['#markup'] = l($link_text, $link_url, array('query' => $query, 'attributes' => array('class' => $link_classes)));
+
+      if ($view_mode == 'grid') {
+        $vars['content']['cu_boulder_today_link']['#prefix'] = '<div class="campus-news-grid-more-link">';
+      } else {
+        $vars['content']['cu_boulder_today_link']['#prefix'] = '<div class="campus-news-more-link">';
+      }
+      $vars['content']['cu_boulder_today_link']['#suffix'] = '</div>';
+
+      $vars['content']['articles']['#weight'] = 0;
+      $vars['content']['cu_boulder_today_link']['#weight'] = 10;
+    }
+    else {
+      $vars['content'] = array();
+    }
+  }
+  if ($vars['elements']['#bundle'] == 'campus_news_feature') {
+    // create cache ID
+    $cid = 'campus_news:' . $vars['bean']->bid;
+    $end_point = variable_get('cu_campus_news_url', 'http://www.colorado.edu/today') . '/' . variable_get('cu_campus_news_syndication', 'syndicate/article');
+
+    // Create query parameters
+    $query = array();
+    // Category parameters
+    $terms = array();
+    if (!empty($vars['bean']->field_campus_news_category)) {
+      $params = $vars['bean']->field_campus_news_category[LANGUAGE_NONE];
+      foreach ($params as $param) {
+        $terms[] = $param['value'];
+      }
+      $terms = join('+', $terms);
+      $query['category'] = $terms;
+    }
+
+
+    // Audience parameters
+    $terms = array();
+    if (!empty($vars['bean']->field_campus_news_audience)) {
+      $params = $vars['bean']->field_campus_news_audience[LANGUAGE_NONE];
+      foreach ($params as $param) {
+        $terms[] = $param['value'];
+      }
+      $terms = join('+', $terms);
+      $query['audience'] = $terms;
+    }
+
+
+    // Unit parameters
+    $terms = array();
+    if (!empty($vars['bean']->field_campus_news_unit)) {
+      $params = $vars['bean']->field_campus_news_unit[LANGUAGE_NONE];
+      foreach ($params as $param) {
+        $terms[] = $param['value'];
+      }
+      $terms = join('+', $terms);
+      $query['unit'] = $terms;
+    }
+
+    $feature_query = array();
+    $feature_query['feature'] = $query;
+    $feature_query['feature']['view_mode'] = 'feature';
+    $feature_query['feature']['items'] = 1;
+    $feature_query['sidebar'] = $query;
+    $feature_query['sidebar']['view_mode'] = 'sidebar';
+    $feature_query['sidebar']['items'] = 5;
+    $nodes = array();
+
+    foreach ($feature_query as $key => $query) {
+      // Build article content end point url
+      $end_point_full = url($end_point, array('query' => $query));
+      // Build last updated end point url
+      $query['updated'] = 1;
+      $end_point_updated = url($end_point, array('query' => $query));
+
+      // Compare last updated to expire time (now - 1 hour), clear cache if so
+      $expire = time() - 60 * 60;
+      $response = drupal_http_request($end_point_updated);
+      if ($response->code == '200') {
+        $updated = drupal_json_decode($response->data, true);
+      }
+      if ($updated > $expire) {
+        cache_clear_all($cid, 'cu_campus_news');
+      }
+
+      // Get cached version if available
+      if ($cache = cache_get($cid, 'cu_campus_news')) {
+        $nodes[$key] = drupal_json_decode($cache->data, true);
+      }
+      else {
+        $response = drupal_http_request($end_point_full);
+        if ($response->code == '200') {
+          $nodes[$key] = drupal_json_decode($response->data, true);
+          // Save to cache
+          cache_set($cid, $response->data, 'cu_campus_news', time() + 60 * 60);
+        }
+      }
+    }
+
+
+    // If articles are returned, send to theme functions and build output
+    $vars['content'] = array();
+    if (!empty($nodes) && !isset($nodes['error'])) {
+      $output = array();
+      foreach ($nodes['feature'] as $key => $node) {
+        $theme_function = 'campus_news__feature';
+        $output[$key]['#markup'] = theme($theme_function, $node);
+      }
+      $vars['content']['articles']['feature'] = $output;
+      $vars['content']['articles']['feature']['#prefix'] = '<div class="article-feature-block-top col-lg-8 col-md-8 col-sm-8 col-xs-12">';
+      $vars['content']['articles']['feature']['#suffix'] = '</div>';
+
+      $output = array();
+      // Remove first item from sidebar nodes since it was used already
+      if (!empty($nodes['sidebar'])) {
+        array_shift($nodes['sidebar']);
+      }
+      foreach ($nodes['sidebar'] as $key => $node) {
+        $theme_function = 'campus_news__sidebar';
+        $output[$key]['#markup'] = theme($theme_function, $node);
+      }
+      $vars['content']['articles']['sidebar'] = $output;
+      $vars['content']['articles']['sidebar']['#prefix'] = '<div class="article-feature-block-remaining col-lg-4 col-md-4 col-sm-4 col-xs-12 clearfix">';
+      $vars['content']['articles']['sidebar']['#suffix'] = '</div>';
+
+      $vars['content']['#prefix'] = '<div class="article-feature-block article-feature-inline-3 campus-news-feature row clearfix">';
+      $vars['content']['#suffix'] = '</div>';
+
+      // Grid needs additional markup
+      $link_classes = array();
+
+      $link_classes[] = 'button-ghost';
+
+
+      // Add link to CU Boulder Today
+      $link_text = variable_get('cu_campus_news_link_text', 'Read more at CU Boulder Today');
+      $link_url = variable_get('cu_campus_news_url', 'http://www.colorado.edu/today') . '/' . variable_get('cu_campus_news_link_path', 'syndicate/article/read');
+
+      if (!empty($query['updated'])) {
+        unset($query['updated']);
+      }
+      if (!empty($query['items'])) {
+        unset($query['items']);
+      }
+      if (!empty($query['view_mode'])) {
+        unset($query['view_mode']);
+      }
+
+      $vars['content']['cu_boulder_today_link']['#markup'] = l($link_text, $link_url, array('query' => $query, 'attributes' => array('class' => $link_classes)));
+      $vars['content']['cu_boulder_today_link']['#prefix'] = '<div class="campus-news-more-link">';
+      $vars['content']['cu_boulder_today_link']['#suffix'] = '</div>';
+
+      $vars['content']['articles']['#weight'] = 0;
+      $vars['content']['cu_boulder_today_link']['#weight'] = 10;
+    }
+    else {
+      $vars['content'] = array();
+    }
+
+  }
+}
+
+/**
+ * Allowed values function for article display options.
+ */
+function cu_campus_news_display_values() {
+  return array(
+    'teaser' => 'Teaser',
+    'grid' => 'Grid',
+    'sidebar' => 'Title and Thumbnail',
+    'title' => 'Title',
+  );
+}
+
+/**
+ * Allowed values function for items options.
+ */
+function cu_campus_news_items_values() {
+  return array(
+    1 => 1,
+    2 => 2,
+    3 => 3,
+    4 => 4,
+    5 => 5,
+    6 => 6,
+    7 => 7,
+    8 => 8,
+    9 => 9,
+    10 => 10,
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+
+function cu_campus_news_theme(&$existing, $type, $theme, $path) {
+  $registry = array();
+  $template_dir = drupal_get_path('module', 'cu_campus_news') . '/templates';
+  $registry['campus_news__teaser'] = array(
+    'template' => 'campus-news--teaser',
+    'path' => $template_dir,
+  );
+  $registry['campus_news__title'] = array(
+    'template' => 'campus-news--title',
+    'path' => $template_dir,
+  );
+  $registry['campus_news__sidebar'] = array(
+    'template' => 'campus-news--sidebar',
+    'path' => $template_dir,
+  );
+  $registry['campus_news__grid'] = array(
+    'template' => 'campus-news--grid',
+    'path' => $template_dir,
+  );
+  $registry['campus_news__feature'] = array(
+    'template' => 'campus-news--feature',
+    'path' => $template_dir,
+  );
+  return $registry;
+}
+
+function cu_campus_news_form_bean_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['bean']['#value']->type == 'campus_news') {
+    // Add submit function for clearing cached results
+    $form['#submit'][] = 'cu_campus_news_cache_clear';
+    // Check to see if syndication is disabled, show message, disable save
+    $end_point = variable_get('cu_campus_news_url', 'http://www.colorado.edu/today') . '/' . variable_get('cu_campus_news_syndication', 'syndicate/article');
+    $query['updated'] = 1;
+    $end_point_updated = url($end_point, array('query' => $query));
+    $response = drupal_http_request($end_point_updated);
+    if ($response->code == '200') {
+      $updated = drupal_json_decode($response->data, true);
+      if (isset($updated['error'])) {
+        drupal_set_message(t('Campus News syndication is currently disabled'), 'error');
+        $form['actions']['submit']['#disabled'] = TRUE;
+      }
+    }
+  }
+}
+
+function cu_campus_news_cache_clear($form, &$form_state) {
+  $cid = 'campus_news:' . $form['bean']['#value']->bid;
+  cache_clear_all($cid, 'cu_campus_news');
+}
+
+/**
+ * Implements hook_permission().
+ */
+function cu_campus_news_permission() {
+  return array(
+    'administer campus news' => array(
+      'title' => 'Administer Campus News',
+      'description' => 'Configure campus news URLs and paths',
+    ),
+  );
+}
+
+/**
+ * Implements hook_secure_permissions().
+ *
+ * Adding permissions for newsletter
+ */
+function cu_campus_news_secure_permissions($role) {
+  $permissions = array(
+    'anonymous user' => array(
+      'view any campus_news bean',
+      'view any campus_news_feature bean',
+    ),
+    'authenticated user' => array(
+      'view any campus_news bean',
+      'view any campus_news_feature bean',
+    ),
+    'administrator' => array(
+      'create any campus_news bean',
+      'delete any campus_news bean',
+      'edit any campus_news bean',
+      'view any campus_news bean',
+      'create any campus_news_feature bean',
+      'delete any campus_news_feature bean',
+      'edit any campus_news_feature bean',
+      'view any campus_news_feature bean',
+    ),
+    'developer' => array(
+      'create any campus_news bean',
+      'delete any campus_news bean',
+      'edit any campus_news bean',
+      'view any campus_news bean',
+      'administer campus news',
+      'create any campus_news_feature bean',
+      'delete any campus_news_feature bean',
+      'edit any campus_news_feature bean',
+      'view any campus_news_feature bean',
+    ),
+    'edit_my_content' => array(
+      'view any campus_news bean',
+      'view any campus_news_feature bean',
+    ),
+    'edit_only' => array(
+      'edit any campus_news bean',
+      'view any campus_news bean',
+      'edit any campus_news_feature bean',
+      'view any campus_news_feature bean',
+    ),
+    'site_editor' => array(
+      'create any campus_news bean',
+      'delete any campus_news bean',
+      'edit any campus_news bean',
+      'view any campus_news bean',
+      'create any campus_news_feature bean',
+      'delete any campus_news_feature bean',
+      'edit any campus_news_feature bean',
+      'view any campus_news_feature bean',
+    ),
+    'site_owner' => array(
+      'create any campus_news bean',
+      'delete any campus_news bean',
+      'edit any campus_news bean',
+      'view any campus_news bean',
+      'create any campus_news_feature bean',
+      'delete any campus_news_feature bean',
+      'edit any campus_news_feature bean',
+      'view any campus_news_feature bean',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}
+
+function cu_campus_news_medium($timestamp) {
+  // AP date style
+  $post_date_raw = new DateTime();
+  $post_date_raw->setTimestamp($timestamp);
+  $post_date_month = $post_date_raw->format('F');
+  $post_date_day_year = $post_date_raw->format('j, Y');
+
+  if($post_date_month == "September"){
+      $ap_date_sept = "Sept. " . $post_date_day_year;
+      $variables['ap_date_cu_medium_date'] = $ap_date_sept;
+  } elseif (strlen($post_date_month) > 5){
+      $ap_date_short = substr($post_date_month, 0,3) . "." . " " . $post_date_day_year;
+      $variables['ap_date_cu_medium_date'] = $ap_date_short;
+  } else {
+      $ap_date_long = $post_date_month . " " . $post_date_day_year;
+      $variables['ap_date_cu_medium_date'] = $ap_date_long;
+  }
+  return $variables['ap_date_cu_medium_date'];
+}
+
+/**
+ * Build a nested array from a taxonomy tree.
+ */
+function &cu_campus_news_taxonomy_treedata(&$nvocs) {
+	//this function will take a flat vocabulary tree and turn it into a multi-tiered array
+	//the return array will simply contain an array of pointers rather then physical objects
+
+	$map = array();
+
+	//go through the tree and find the lowest depth aswell as all available depth levels to scan
+	$startdepth = false;
+	$depthlist = array();
+	foreach($nvocs as $vocindex => &$vocitem) {
+		if ($startdepth === false || $startdepth > $vocitem->depth) {
+			//new start depth found
+			$startdepth = $vocitem->depth;
+		}
+
+		//add this item to the speciffic depth level
+		$depthlist[$vocitem->depth][$vocitem->tid] = &$vocitem;
+	}
+
+	//sort the depthlist so lowest is first
+	ksort($depthlist);
+
+	//scan all depth levels found
+	$lastdepth = null;
+	foreach($depthlist as $depthlevel => &$depths) {
+		//check for first depth (root) level
+		$currentdepthdata = array();
+
+		if ($depthlevel == $startdepth) {
+			//add root items to the map
+			foreach($depths as $itemindex => &$item) {
+				$mapindex = count($map);
+				$map[$mapindex] = array("data" => &$item,"children" => array());
+				$currentdepthdata[$itemindex] = &$map[$mapindex];
+			}
+		} else {
+			//scan through all items within this depth
+			foreach($depths as $itemindex => &$item) {
+				//find a matching "map" in teh last depth to assign the item too
+				foreach($item->parents as $parentindex) {
+					$mapindex = count($lastdepthdata[$parentindex]["children"]);
+					$lastdepthdata[$parentindex]["children"][$mapindex] = array("data" => &$item,"children" => array());
+					$currentdepthdata[$itemindex] = &$lastdepthdata[$parentindex]["children"][$mapindex];
+				}
+			}
+		}
+
+		$lastdepthdata = $currentdepthdata;
+	}
+
+	return $map;
+}
+
+/**
+ * Build a nested select options list
+ */
+function cu_campus_news_nested_options($terms) {
+  $options = array();
+  uasort($terms, 'cu_campus_news_sort');
+  foreach($terms as $term) {
+    // Use depth to add - to denote children terms
+    $indent = cu_campus_news_term_depth($term['data']->depth);
+
+    $options[$term['data']->tid] = $indent . ' ' . $term['data']->name;
+    if (!empty($term['children'])) {
+      $nested = cu_campus_news_nested_options($term['children']);
+      $options = $options + $nested;
+    }
+
+  }
+  return $options;
+}
+
+/**
+ * Returns - to denote children
+ */
+function cu_campus_news_term_depth($depth = 0) {
+  $indent = '';
+  for ($i = 0; $i < $depth; $i++) {
+    $indent = $indent . '-';
+  }
+  return $indent;
+}
+
+/**
+ * Sort function for terms array
+ */
+function cu_campus_news_sort($a, $b) {
+  $a = $a['data']->name;
+  $b = $b['data']->name;
+  if ($a == $b) {
+      return 0;
+  }
+  return ($a < $b) ? -1 : 1;
+}
+
+function cu_campus_news_placeholder_img($size = '600') {
+  $path = drupal_get_path('module', 'cu_campus_news') . '/images/placeholder-' . $size . '.jpg';
+  return url($path, array('absolute' => TRUE));
+}
+
+/**
+ * Implements hook_express_bean_list_groups().
+ * Provided by express_add_content.api.php.
+ */
+function cu_campus_news_express_bean_list_groups($bundles) {
+
+
+  $bundles['campus_news']['title'] = 'Campus News';
+  $bundles['campus_news']['types'][] = 'Campus News';
+  $bundles['campus_news']['types'][] = 'Campus News Feature';
+
+  return $bundles;
+}

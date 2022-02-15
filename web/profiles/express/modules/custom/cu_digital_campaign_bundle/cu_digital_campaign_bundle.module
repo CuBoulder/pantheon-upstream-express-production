@@ -1,0 +1,233 @@
+<?php
+
+/**
+ * @file
+ * Contains Drupal-related hooks for the Digital Campaign bundle.
+ */
+
+/**
+ * Define site roles in code.
+ *
+ * Create a secure_permissions_data module directory and place this function
+ * in secure_permissions_data.module.
+ *
+ * @return array
+ *   An array defining all the roles for the site.
+ */
+function cu_digital_campaign_bundle_secure_permissions_roles() {
+  return array(
+    'campaign_manager',
+  );
+}
+
+/**
+ * Define site permissions in code.
+ *
+ * Create a secure_permissions_data module directory and place this function
+ * in secure_permissions_data.module.
+ *
+ * @param string $role
+ *   The role for which the permissions are being requested.
+ *
+ * @return array
+ *   An array defining all the permissions for the site.
+ */
+function cu_digital_campaign_bundle_secure_permissions($role) {
+  $permissions = array(
+    'administrator' => array(
+      'administer embed templates',
+      'edit et_slate_form_bean embeds',
+      'edit et_slate_form_block embeds',
+      'view et_slate_form_bean embeds',
+      'view et_slate_form_block embeds',
+      'edit et_cupresents embeds',
+      'view et_cupresents embeds',
+      'view any et_beans_bean bean',
+      'edit facebook embeds',
+      'view facebook embeds',
+      'edit doubleclick embeds',
+      'view doubleclick embeds',
+      'edit cu_doubleclick embeds',
+      'view cu_doubleclick embeds',
+      'edit twitter embeds',
+      'view twitter embeds',
+      'edit et_linkedin embeds',
+      'view et_linkedin embeds',
+      'publish embeds',
+      'unpublish embeds',
+      'delete embeds',
+      'assign campaign_manager role',
+      'edit users with role campaign_manager',
+      'cancel users with role campaign_manager'
+    ),
+    'anonymous user' => array(
+      'view et_slate_form_bean embeds',
+      'view et_slate_form_block embeds',
+      'view et_cupresents embeds',
+      'view any et_beans_bean bean',
+      'view twitter embeds',
+      'view doubleclick embeds',
+      'view cu_doubleclick embeds',
+      'view facebook embeds',
+      'view et_linkedin embeds',
+    ),
+    'authenticated user' => array(
+      'view et_slate_form_bean embeds',
+      'view et_slate_form_block embeds',
+      'view et_cupresents embeds',
+      'view any et_beans_bean bean',
+      'view twitter embeds',
+      'view doubleclick embeds',
+      'view cu_doubleclick embeds',
+      'view facebook embeds',
+      'view et_linkedin embeds',
+    ),
+    'campaign_manager' => array(
+      'administer embed templates',
+      'edit et_slate_form_bean embeds',
+      'edit et_slate_form_block embeds',
+      'view et_slate_form_bean embeds',
+      'view et_slate_form_block embeds',
+      'edit et_cupresents embeds',
+      'view et_cupresents embeds',
+      'view any et_beans_bean bean',
+      'edit facebook embeds',
+      'view facebook embeds',
+      'edit doubleclick embeds',
+      'view doubleclick embeds',
+      'edit cu_doubleclick embeds',
+      'view cu_doubleclick embeds',
+      'edit twitter embeds',
+      'view twitter embeds',
+      'edit et_linkedin embeds',
+      'view et_linkedin embeds',
+      'publish embeds',
+      'unpublish embeds',
+      'delete embeds',
+      'access navbar',
+      'view the administration theme',
+      'access content overview',
+      'administer nodes',
+    ),
+    'developer' => array(
+      'administer embed templates',
+      'edit et_slate_form_bean embeds',
+      'edit et_slate_form_block embeds',
+      'view et_slate_form_bean embeds',
+      'view et_slate_form_block embeds',
+      'view any et_beans_bean bean',
+      'edit et_cupresents embeds',
+      'view et_cupresents embeds',
+      'edit facebook embeds',
+      'view facebook embeds',
+      'edit doubleclick embeds',
+      'view doubleclick embeds',
+      'edit cu_doubleclick embeds',
+      'view cu_doubleclick embeds',
+      'edit twitter embeds',
+      'view twitter embeds',
+      'edit et_linkedin embeds',
+      'view et_linkedin embeds',
+      'publish embeds',
+      'unpublish embeds',
+      'delete embeds',
+      'assign campaign_manager role',
+      'edit users with role campaign_manager',
+      'cancel users with role campaign_manager'
+    ),
+    'site_owner' => array(
+      'administer embed templates',
+      'edit et_slate_form_bean embeds',
+      'edit et_slate_form_block embeds',
+      'view et_slate_form_bean embeds',
+      'view et_slate_form_block embeds',
+      'view any et_beans_bean bean',
+      'edit et_cupresents embeds',
+      'view et_cupresents embeds',
+      'edit facebook embeds',
+      'view facebook embeds',
+      'edit doubleclick embeds',
+      'view doubleclick embeds',
+      'edit cu_doubleclick embeds',
+      'view cu_doubleclick embeds',
+      'edit twitter embeds',
+      'view twitter embeds',
+      'edit et_linkedin embeds',
+      'view et_linkedin embeds',
+      'publish embeds',
+      'unpublish embeds',
+      'delete embeds',
+      'assign campaign_manager role',
+      'edit users with role campaign_manager',
+      'cancel users with role campaign_manager'
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}
+
+/**
+ * Implements hook_express_help()
+ *
+ * Add contextual help for the Advanced content like Quicktabs.
+ *
+ * @param array $variables
+ *   Array with information about help hooks.
+ *
+ * @return array
+ *   Array with your added help hooks.
+ */
+function cu_digital_campaign_bundle_express_help($variables) {
+
+  $variables['admin/content/embeds'][] = array(
+    'title' => 'Embeds Overview Help',
+    'short_title' => 'Embed Help',
+    'url' => '/node/1516',
+  );
+
+  $variables['admin/content/embeds/add'][] = array(
+    'title' => 'Embeds Overview Help',
+    'short_title' => 'Embed Help',
+    'url' => '/node/1516',
+  );
+
+  $variables['admin/content/embeds/add/doubleclick'][] = array(
+    'title' => 'Doubleclick Embed Help',
+    'short_title' => 'Embed Help',
+    'url' => '/node/1574',
+  );
+
+  $variables['admin/content/embeds/doubleclick/%/edit'][] = array(
+    'title' => 'Doubleclick Embed Help',
+    'short_title' => 'Embed Help',
+    'url' => '/node/1574',
+  );
+
+  $variables['admin/content/embeds/add/twitter'][] = array(
+    'title' => 'Twitter Embed Help',
+    'short_title' => 'Embed Help',
+    'url' => '/node/1574',
+  );
+
+  $variables['admin/content/embeds/twitter/%/edit'][] = array(
+    'title' => 'Twitter Embed Help',
+    'short_title' => 'Embed Help',
+    'url' => '/node/1574',
+  );
+
+  $variables['admin/content/embeds/add/facebook'][] = array(
+    'title' => 'Facebook Embed Help',
+    'short_title' => 'Embed Help',
+    'url' => '/node/1574',
+  );
+
+  $variables['admin/content/embeds/facebook/%/edit'][] = array(
+    'title' => 'Facebook Embed Help',
+    'short_title' => 'Embed Help',
+    'url' => '/node/1574',
+  );
+
+  return $variables;
+}

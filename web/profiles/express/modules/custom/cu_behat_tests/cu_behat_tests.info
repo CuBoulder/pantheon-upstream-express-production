@@ -1,0 +1,41 @@
+name = Behat Testing Suite Setup
+description = Sets up functionality needed to run the Express BDD test suite.
+core = 7.x
+version = 7.x-1.0
+package = Testing
+
+; Enable bundles for testing.
+dependencies[] = cu_advanced_content_bundle
+dependencies[] = cu_advanced_design_bundle
+dependencies[] = cu_advanced_layout_bundle
+dependencies[] = cu_feeds_bundle
+dependencies[] = cu_news_bundle
+dependencies[] = cu_people_bundle
+dependencies[] = cu_photo_gallery_bundle
+dependencies[] = cu_seo_bundle
+dependencies[] = cu_social_media_bundle
+dependencies[] = cu_forms_bundle
+dependencies[] = cu_video_hero_unit_bundle
+dependencies[] = cu_publications_bundle
+dependencies[] = express_collections_bundle
+dependencies[] = express_localist_bundle
+dependencies[] = cu_digital_campaign_bundle
+dependencies[] = cu_mega_menu_bundle
+dependencies[] = cu_alumni_class_notes_bundle
+dependencies[] = cu_livestream_bundle
+dependencies[] = cu_content_sequence_bundle
+dependencies[] = cu_newsletter_bundle
+dependencies[] = cu_campus_news_bundle
+dependencies[] = cu_livechat_bundle
+dependencies[] = cu_custom_logo_bundle
+dependencies[] = express_responsive_visibility_bundle
+dependencies[] = cu_section_page_bundle
+dependencies[] = cu_dc_tests
+dependencies[] = cu_article_tests
+dependencies[] = cu_js_includes
+; dependencies[] = cu_digital_campaign_bundle (already listed above)
+; dependencies[] = cu_ab_test (this is a dependency of cu_dc_tests)
+
+
+; Create users for tests.
+dependencies[] = cu_local_users

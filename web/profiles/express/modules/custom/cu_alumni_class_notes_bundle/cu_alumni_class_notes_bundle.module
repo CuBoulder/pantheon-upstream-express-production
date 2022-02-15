@@ -1,0 +1,55 @@
+<?php
+
+
+/*
+ * Implements hook_secure_permissions
+ *
+ * Adding permissions for collection grid bean
+ */
+function cu_alumni_class_notes_bundle_secure_permissions($role) {
+  $permissions = array(
+    'anonymous user' => array(
+    ),
+    'authenticated user' => array(
+    ),
+    'administrator' => array(
+      'create class_note content',
+      'delete any class_note content',
+      'delete own class_note content',
+      'edit any class_note content',
+      'edit own class_note content',
+    ),
+    'developer' => array(
+      'create class_note content',
+      'delete any class_note content',
+      'delete own class_note content',
+      'edit any class_note content',
+      'edit own class_note content',
+    ),
+    'edit_my_content' => array(
+      'delete own class_note content',
+      'edit own class_note content',
+    ),
+    'edit_only' => array(
+      'edit own class_note content',
+    ),
+    'site_editor' => array(
+      'create class_note content',
+      'delete any class_note content',
+      'delete own class_note content',
+      'edit any class_note content',
+      'edit own class_note content',
+    ),
+    'site_owner' => array(
+      'create class_note content',
+      'delete any class_note content',
+      'delete own class_note content',
+      'edit any class_note content',
+      'edit own class_note content',
+    ),
+  );
+
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
+}

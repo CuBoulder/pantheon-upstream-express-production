@@ -1,0 +1,8 @@
+name = Chemistry Titles
+description = Allows titles to display empirical formulas of a chemical compounds and properly reference publications in titles.
+core = 7.x
+project_demo_url = https://websupport.colorado.edu/article/228-how-to-use-chemistry-titles
+
+dependencies[] = html_title
+
+bundle_group = 'request_bundles'

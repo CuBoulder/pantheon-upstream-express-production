@@ -1,0 +1,11 @@
+.localist-wrapper > ul, .localist-wrapper > ul > li { list-style: none; list-style-image: none; margin: 0; padding: 0; }
+
+.localist-events ul#lwe { padding-left: 0; }
+.localist-events #lw { background: none; }
+.localist-events .localist_minicalendar_page_heading { font-weight: bold; }
+.localist-events ol.event-list { overflow: hidden; }
+
+table.localist_minicalendar_minicalendar caption { border: 0; height: 1px; overflow: hidden; padding: 0; position: absolute !important; width: 1px; white-space: nowrap; }
+
+@media screen and (min-width: 768px) { .localist-combo.localist-layout-horizontal { margin: 0 -20px; display: flex; flex-direction: row-reverse; }
+  .localist-combo.localist-layout-horizontal > div { padding: 0 20px; } }

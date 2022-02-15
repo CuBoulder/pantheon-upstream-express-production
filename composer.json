@@ -1,0 +1,16 @@
+{
+    "name": "tirazel/upstreamtest",
+    "require": {
+        "simplesamlphp/simplesamlphp": "^1.19"
+    },
+    "scripts": {
+        "post-update-cmd": [
+          "rm -rf vendor/simplesamlphp/simplesamlphp/metadata",
+          "rm -rf vendor/simplesamlphp/simplesamlphp/config",
+          "rm -rf vendor/simplesamlphp/simplesamlphp/cert",
+          "ln -s ../../../private/metadata vendor/simplesamlphp/simplesamlphp/metadata",
+          "ln -s ../../../private/config vendor/simplesamlphp/simplesamlphp/config",
+          "ln -s ../../../private/cert vendor/simplesamlphp/simplesamlphp/cert"
+        ]
+    }
+}

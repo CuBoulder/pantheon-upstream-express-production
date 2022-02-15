@@ -1,0 +1,3 @@
+name = Livestream embed
+description = Adds support for embedding livestream content
+core = 7.x

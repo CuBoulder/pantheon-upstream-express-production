@@ -1,0 +1,17 @@
+name = Video Hero Unit Bundle
+description = Looping video background display to be used on a homepage or related to a marketing campaign website.
+core = 7.x
+version = 7.x.1.5
+project = cu_video_hero_unit_bundle
+project status url = https://github.com/CuBoulder/cu_video_hero_unit_bundle
+project_demo_url = http://www.colorado.edu/webcentral/node/1536
+bundle_group = 'request_bundles'
+
+dependencies[] = cu_video_hero_unit
+bundle_request = 1
+bundle_group = 'request_bundles'
+
+bundle_roles[] = developer
+bundle_roles[] = administrator
+bundle_roles[] = site_owner
+bundle_roles[] = configuration_manager

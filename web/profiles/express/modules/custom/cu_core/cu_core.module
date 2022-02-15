@@ -1,0 +1,575 @@
+<?php
+/**
+ * @file
+ * Contains hooks for cu_core module.
+ */
+
+/**
+ * Implements hook_menu_alter().
+ */
+function cu_core_menu_alter(&$items) {
+  // Remove visibility for enpoints unnecessarily set as public.
+  // Add endpoints to the array in the foreach loop.
+  foreach (['filter/tips'] as $endpoint) {
+    if ($items[$endpoint]) {
+      $items[$endpoint]['access callback'] = '_check_authenticated_user_role';
+      unset($items[$endpoint]['access arguments']);
+    }
+  }
+}
+
+/**
+ * Checks a user's role passed in from cu_core_menu_alter().
+ */
+function _check_authenticated_user_role() {
+  global $user;
+
+  foreach ($user->roles as $role) {
+    if ($role == 'authenticated user') {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * @param array $implementations
+ *   List of modules that implement hook.
+ * @param string $hook
+ *   Name of the hook being fired.
+ */
+function cu_core_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'form_alter' && isset($implementations['cu_core'])) {
+    $group = $implementations['cu_core'];
+    unset($implementations['cu_core']);
+    $implementations['cu_core'] = $group;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter()
+ *
+ * Disable syslog form fields.
+ *
+ * @param  $form
+ * @param  $form_state
+ */
+function cu_core_form_system_logging_settings_alter(&$form, &$form_state) {
+  $form['syslog_identity']['#disabled'] = TRUE;
+  $form['syslog_facility']['#disabled'] = TRUE;
+  $form['syslog_format']['#disabled'] = TRUE;
+
+  $form['reset_syslog_identity'] = array(
+    '#type' => 'submit',
+    '#value' => t('Rebuild syslog identity'),
+    '#submit' => array('cu_core_rebuild_syslog_identity_submit'),
+  );
+}
+
+function cu_core_rebuild_syslog_identity_submit(&$form, &$form_state) {
+  $cu_sid = variable_get('cu_sid', '');
+  if ($cu_sid) {
+    // Current value
+    $syslog_identity = 'drupal-' . $cu_sid;
+  }
+  else {
+    $syslog_identity = 'drupal-no_sid';
+  }
+  variable_set('syslog_identity', $syslog_identity);
+  drupal_set_message(t('Syslog identity has been set to "@syslogid"', array('@syslogid' => $syslog_identity)));
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function cu_core_form_alter(&$form, $form_state, $form_id) {
+  // Remove "Promote to front page."
+  if (isset($form['type']) && isset($form['#node']) && $form['type']['#value'] .'_node_form' == $form_id) {
+    unset($form['options']['promote']);
+  }
+  if (isset($form['actions']['preview_changes'])) {
+    $form['actions']['preview_changes']['#attributes']['class'][] = 'element-invisible';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function cu_core_form_bean_form_alter(&$form, &$form_state, $form_id) {
+  // Remove "Redirect URL" accordion on bean edit forms.
+  $form['redirect']['#access'] = FALSE;
+
+  // Move revision group to bottom of bean edit forms.
+  $form['revision2'] = $form['revision'];
+  $form['revision2']['#weight'] = 90;
+  unset($form['revision']);
+}
+
+/**
+ * Implements hook_modules_enabled().
+ * Add shortcut link for context AFTER context_ui is enabled.
+ */
+function cu_core_modules_installed($modules) {
+  if (in_array('context_ui', $modules)) {
+    menu_rebuild();
+    // Add context shortcut to shortcuts set.
+    $shortcut_set = shortcut_set_load(SHORTCUT_DEFAULT_SET_NAME);
+    $shortcut_set->links[] =
+    array(
+      'link_path' => 'admin/structure/context',
+      'link_title' => t('Context'),
+      'weight' => -14,
+    );
+    shortcut_set_save($shortcut_set);
+  }
+}
+
+/**
+ * Implements hook_express_node_list_groups().
+ * Provided by express_add_content.api.php.
+ */
+function cu_core_express_node_list_groups($bundles) {
+  $bundles['express_core']['title'] = 'Express Core';
+  $bundles['express_core']['weight'] = -99;
+  $bundles['express_core']['types'][] = 'Basic page';
+  $bundles['express_core']['types'][] = 'File';
+  $bundles['express_core']['types'][] = 'Frequently Asked Questions';
+
+  $bundles['news']['title'] = 'News and Articles';
+  $bundles['news']['types'][] = 'Article';
+  $bundles['news']['types'][] = 'Article List Page';
+
+  $bundles['people']['title'] = 'People';
+  $bundles['people']['types'][] = 'Person';
+  $bundles['people']['types'][] = 'People List Page';
+
+  $bundles['photo']['title'] = 'Photo Gallery';
+  $bundles['photo']['types'][] = 'Photo Gallery';
+
+  $bundles['forms']['title'] = 'Forms';
+  $bundles['forms']['types'][] = 'Webform';
+  return $bundles;
+}
+
+/**
+ * Implements hook_express_bean_list_groups().
+ * Provided by express_add_content.api.php.
+ */
+function cu_core_express_bean_list_groups($bundles) {
+  $bundles['express_core']['title'] = 'Express Core';
+  $bundles['express_core']['weight'] = -99;
+  $bundles['express_core']['types'][] = 'Hero Unit';
+  $bundles['express_core']['types'][] = 'Slider';
+  $bundles['express_core']['types'][] = 'Text Block';
+
+  $bundles['news']['title'] = 'News and Articles';
+  $bundles['news']['types'][] = 'Article List';
+  $bundles['news']['types'][] = 'Article Feature';
+  $bundles['news']['types'][] = 'Article Grid';
+  $bundles['news']['types'][] = 'Article Slider';
+
+  $bundles['people']['title'] = 'People';
+  $bundles['people']['types'][] = 'People List Block';
+
+  $bundles['events']['title'] = 'Events';
+  $bundles['events']['types'][] = 'Events Calendar Block';
+  $bundles['events']['types'][] = 'Events Calendar Grid';
+
+  $bundles['social']['title'] = 'Social Media';
+  $bundles['social']['types'][] = 'Social Links';
+  $bundles['social']['types'][] = 'Facebook Activity';
+  $bundles['social']['types'][] = 'Facebook Like Button';
+  $bundles['social']['types'][] = 'Twitter Block';
+
+  $bundles['advanced_content']['title'] = 'Advanced Content';
+  $bundles['advanced_content']['types'][] = 'Content Grid';
+  $bundles['advanced_content']['types'][] = 'Expandable';
+  $bundles['advanced_content']['types'][] = 'Video Reveal';
+
+  return $bundles;
+}
+/**
+ * Alters admin structure menu page to hide link to 'Block administration'.
+ */
+function cu_core_page_alter(&$page) {
+  if (!empty($page['help'])) {
+    $message = $page['help']['system_help']['#markup'];
+    $search = '/development/admin/structure/block';
+    if (current_path() == 'admin/structure/menu' && (strpos($message, $search) !== false)) {
+      unset($page['help']['system_help']);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Make sure that actiuons are at bottom of menu item form.
+ */
+function cu_core_form_menu_edit_item_alter(&$form, &$form_state, $form_id) {
+  $form['actions']['#weight'] = 1000;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function cu_core_permission() {
+  return array(
+    'view express environment indicator' => array(
+      'title' => t('View Express Environment Indicator'),
+    ),
+    'edit site affiliation' => array(
+      'title' => t('Edit Site Affiliation'),
+    ),
+  );
+}
+
+function cu_core_preprocess_html(&$vars) {
+  /**
+   * Accepted values for displaying indicator (add as classes in classes_array variable:
+   *
+   * Environment:
+   * environment-production/environment-test
+   *
+   * Infrastructure:
+   * infrastructure-new/infrastructure-old
+   *
+   * Site Status:
+   * status-launched/status-staged
+   *
+   * Migration
+   * migrate-ready
+   */
+  global $user;
+  if ($_SERVER['HTTP_HOST'] === 'www-test-new.colorado.edu' && $user->uid) {
+    $vars['classes_array'][] = 'environment-test';
+    $vars['classes_array'][] = 'infrastructure-new';
+    $vars['classes_array'][] = 'status-launched';
+    drupal_add_css(drupal_get_path('module', 'cu_core') . '/css/cu-core.css');
+    drupal_add_js(drupal_get_path('module', 'cu_core') . '/js/cu-core-no-migrate.js');
+  }
+
+  if (user_access('view express environment indicator')) {
+    $env = $_SERVER['HTTP_HOST'];
+    //variable_get('atlas_status') == 'available'
+    // @TODO: Need better detection of Valet sites
+    drupal_add_css(drupal_get_path('module', 'cu_core') . '/css/cu-core.css');
+    switch ($env) {
+      case 'www.colorado.edu':
+        if ($_ENV['OSR_ENV'] == 'master') {
+          $vars['classes_array'][] = 'indicator-disabled';
+        }
+        else {
+          $vars['classes_array'][] = 'environment-production';
+          $vars['classes_array'][] = 'infrastructure-old';
+          $vars['classes_array'][] = 'status-launched';
+          drupal_add_js(drupal_get_path('module', 'cu_core') . '/js/cu-core-no-migrate.js');
+        }
+        break;
+      case 'www-test.colorado.edu':
+        if ($_ENV['OSR_ENV'] == 'test') {
+          $vars['classes_array'][] = 'indicator-disabled';
+        }
+        else {
+          $vars['classes_array'][] = 'environment-test';
+          $vars['classes_array'][] = 'infrastructure-new';
+          $vars['classes_array'][] = 'status-launched';
+          drupal_add_js(drupal_get_path('module', 'cu_core') . '/js/cu-core-no-migrate.js');
+        }
+        break;
+      case 'www-prod-new.colorado.edu':
+        $vars['classes_array'][] = 'environment-production';
+        $vars['classes_array'][] = 'infrastructure-new';
+        $vars['classes_array'][] = 'status-launched';
+        drupal_add_js(drupal_get_path('module', 'cu_core') . '/js/cu-core.js');
+        break;
+      case 'express.test':
+        $vars['classes_array'][] = 'environment-test';
+        $vars['classes_array'][] = 'infrastructure-new';
+        $vars['classes_array'][] = 'status-launched';
+        drupal_add_js(drupal_get_path('module', 'cu_core') . '/js/cu-core.js');
+        break;
+    }
+  }
+
+  drupal_add_css(drupal_get_path('module', 'cu_core') . '/css/cu-core.css');
+
+  if (variable_get('site_404', '') === current_path()) {
+    $vars['head_title'] = implode(' | ', array(
+      t('Page not found'),
+      variable_get('site_name'),
+      t('University of Colorado Boulder'),
+    ));
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * This alters the site name form from express_settings.module.
+ * This alter provides a list of CU Boulder specific options for the
+ * affiliation field in addition to a custom option.
+ *
+ * Most sites should use one of the set options, but the custom option can be
+ * used for special use cases, such as RASEI, where the affilation text could be
+ * 'A partnership between CU Boulder and the National Renewable Energy Laboratory'.
+ *
+ * This alter also adds a site_type field. By setting a site type, we can make
+ * global/theme changes based on these. For example, sport clubs get the
+ * Ralphie logo added next to the site name, student groups get an affilation
+ * set. See template.php and site-name.tpl.php in the UCB theme.
+ */
+function cu_core_form_express_settings_site_name_form_alter(&$form, &$form_state, $form_id) {
+  // Set a type for each site.
+  $form['express_site_type'] = array(
+    '#type' => 'select',
+    '#options' => cu_core_site_types(),
+    '#empty_option' => '- None -',
+    '#default_value' => variable_get('express_site_type', ''),
+    '#access' => FALSE,
+    '#title' => 'Site Type',
+  );
+
+  // The affiliation options are CU Boulder specific.
+  // Altering the form to include pre-selected options + custom.
+  $form['affiliation'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Affiliation',
+    '#access' => FALSE,
+  );
+  $affiliations = cu_core_site_affiliation_options();
+  $options = array();
+  foreach ($affiliations as $value => $label) {
+    $options[$value] = $label['label'];
+  }
+  $options['custom'] = 'Custom';
+  $form['cu_site_affiliation_options'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#empty_option' => '- None -',
+    '#description' => 'Display a site affiliation message. This element may be overriden by the site type configuraton.',
+    '#default_value' => variable_get('cu_site_affiliation_options', ''),
+    '#access' => FALSE,
+    '#title' => 'Site Affiliation',
+  );
+
+  // Get the custom title/url options and move them into another fieldset.
+  $form['affiliation']['express_site_affiliation_title'] = $form['express_site_affiliation_title'];
+  $form['affiliation']['express_site_affiliation_url'] = $form['express_site_affiliation_url'];
+  $form['affiliation']['#weight'] = 1;
+  // Remove the original form fields.
+  unset($form['express_site_affiliation_title']);
+  unset($form['express_site_affiliation_url']);
+
+  // Add an option for enabling the affiliation display.
+  $form['cu_affiliation_enable'] = array(
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('cu_affiliation_enable', 0),
+    '#title' => 'Display Affiliation',
+    '#weight' => 2,
+    '#access' => FALSE,
+  );
+
+  // Only show custom field if select custom is chosen.
+  $form['affiliation']['#states'] = array(
+    'visible' => array(
+      'select[name="cu_site_affiliation_options"]' => array(
+        'value' => 'custom',
+      ),
+    ),
+  );
+
+  // Show affiliation fields if user has access to edit.
+  if (user_access('edit site affiliation')) {
+    $form['affiliation']['#access'] = TRUE;
+    $form['cu_site_affiliation_options']['#access'] = TRUE;
+    $form['express_site_type']['#access'] = TRUE;
+    $form['cu_affiliation_enable']['#access'] = TRUE;
+  }
+  // Show affiliation values for those who can't edit.
+  else {
+    // Get saved values.
+    $site_type = variable_get('express_site_type', NULL);
+    $saved_affiliation = variable_get('cu_site_affiliation_options', NULL);
+    if ($site_type) {
+      $affiliation = cu_core_site_affiliation_options($site_type);
+      $saved_affiliation = l($affiliation['label'], $affiliation['url']);
+    }
+    // if it's custom, get the custom variables and format as a link.
+    elseif ($saved_affiliation == 'custom') {
+      $saved_affiliation = l(variable_get('express_site_affiliation_title'), variable_get('express_site_affiliation_url'));
+    }
+    // Otherwise, pass value to options function and format as a link.
+    else {
+      if (!empty($saved_affiliation)) {
+        $saved_affiliation = cu_core_site_affiliation_options($saved_affiliation);
+        $saved_affiliation = l($saved_affiliation['label'], $saved_affiliation['url']);
+      }
+    }
+    $form['affiliation_display'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Affiliation',
+    );
+    $form['affiliation_display']['affiliation_values']['#markup'] = $saved_affiliation;
+  }
+}
+
+// Array of affiliate organizations.
+// Includes key, url, and display label.
+// This function is used by the form for select options,
+// and by the theme to display the linked label.
+function cu_core_site_affiliation_options($option = NULL) {
+  $options = array(
+
+    'arts_sciences' => array(
+      'url' => 'https://www.colorado.edu/artsandsciences',
+      'label' => 'College of Arts and Sciences',
+    ),
+    'business' => array(
+      'url' => 'https://www.colorado.edu/business',
+      'label' => 'Leeds School of Business',
+    ),
+    'education' => array(
+      'url' => 'https://www.colorado.edu/education',
+      'label' => 'School of Education',
+    ),
+    'engineering' => array(
+      'url' => 'https://www.colorado.edu/engineering',
+      'label' => 'College of Engineering and Applied Science',
+    ),
+    'cmci' => array(
+      'url' => 'https://www.colorado.edu/cmci',
+      'label' => 'College of Media, Communication and Information',
+    ),
+    'music' => array(
+      'url' => 'https://www.colorado.edu/music',
+      'label' => 'College of Music',
+    ),
+    'law' => array(
+      'url' => 'https://www.colorado.edu/law',
+      'label' => 'School of Law',
+    ),
+    'graduate_school' => array(
+      'url' => 'https://www.colorado.edu/graduateschool',
+      'label' => 'Graduate School',
+    ),
+    'continuing_education' => array(
+      'url' => 'https://ce.colorado.edu/',
+      'label' => 'Division of Continuing Education',
+    ),
+    'university_libraries' => array(
+      'url' => 'https://www.colorado.edu/libraries',
+      'label' => 'University Libraries',
+    ),
+    'biofrontiers_institute' => array(
+      'url' => 'https://www.colorado.edu/biofrontiers',
+      'label' => 'Biofrontiers Institute',
+    ),
+    'odece' => array(
+      'url' => 'https://www.colorado.edu/odece',
+      'label' => 'Office of Diversity, Equity and Community Engagement',
+    ),
+    'faculty_affairs' => array(
+      'url' => 'https://www.colorado.edu/facultyaffairs',
+      'label' => 'Office of Faculty Affairs',
+    ),
+    'ombuds' => array(
+      'url' => 'https://www.colorado.edu/ombuds',
+      'label' => 'Ombuds Office',
+    ),
+    'research_innovation_office' => array(
+      'url' => 'https://www.colorado.edu/researchinnovation',
+      'label' => 'Research and Innovation Office',
+    ),
+    'strategic_initiatives' => array(
+      'url' => 'https://www.colorado.edu/osi',
+      'label' => 'Office of Strategic Initiatives',
+    ),
+    'student_affairs' => array(
+      'url' => 'https://www.colorado.edu/studentaffairs',
+      'label' => 'Division of Student Affairs',
+    ),
+    'undergraduate_education' => array(
+      'url' => '',
+      'label' => 'Office of Undergraduate Education',
+    ),
+    'enrollment_management' => array(
+      'url' => '',
+      'label' => 'Part of Enrollment Management',
+    ),
+    'finance_business_strategy' => array(
+      'url' => 'https://www.colorado.edu/fbs',
+      'label' => 'Part of Finance and Business Strategy',
+    ),
+    'human_resources' => array(
+      'url' => 'https://www.colorado.edu/hr',
+      'label' => 'Department of Human Resources',
+    ),
+    'information_technology' => array(
+      'url' => 'https://oit.colorado.edu/',
+      'label' => 'Office of Information Technology',
+    ),
+    'infrastructure_sustainability' => array(
+      'url' => 'https://www.colorado.edu/infrastructure-sustainability',
+      'label' => 'Part of Infrastructure and Sustainability',
+    ),
+    'institutional_equity_compliance' => array(
+      'url' => 'https://www.colorado.edu/oiec',
+      'label' => 'Office of Institutional Equity',
+    ),
+    'integrity_safety_compliance' => array(
+      'url' => '',
+      'label' => 'Office of Integrity, Safety and Compliance',
+    ),
+    'strategic_relations_comm' => array(
+      'url' => 'https://www.colorado.edu/strategicrelations',
+      'label' => 'Part of Strategic Relations and Communications',
+    ),
+  );
+
+  if ($option) {
+    if (!empty($options[$option])) {
+      return $options[$option];
+    }
+    else {
+      return array();
+    }
+  }
+  return $options;
+}
+
+function cu_core_site_types($type = NULL) {
+  $types = array(
+    'college' => 'College',
+    'school' => 'School',
+    'academic_department' => 'Academic Department',
+    'academic_program' => 'Academic Program',
+    'certificate_program' => 'Certificate Program',
+    'outreach_program' => 'Outreach Program',
+    'residential_academic_program' => 'Residential Academic Program',
+    'academic_support' => 'Academic Support',
+    'center' => 'Center',
+    'institute' => 'Institute',
+    'service_department' => 'Service Department',
+    'resource_department' => 'Resource Department',
+    'support_department' => 'Support Department',
+    'performance' => 'Performance',
+    'event' => 'Event',
+    'museum' => 'Museum',
+    'research_program' => 'Research Program',
+    'lab' => 'Lab',
+    'faculty' => 'Faculty',
+    'student_group' => 'Student Group',
+    'sport_club' => 'Sport Club',
+    'publication' => 'Publication',
+  );
+  if ($type && !empty($types[$type])) {
+    return $type;
+  }
+  else {
+    return $types;
+  }
+}
