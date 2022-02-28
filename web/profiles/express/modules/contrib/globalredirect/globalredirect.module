@@ -45,6 +45,9 @@ function globalredirect_init() {
     }
   }
 
+
+
+
   // Get the query string parameters. If none set, set to NULL.
   $query_string = drupal_get_query_parameters();
   if (empty($query_string)) {
@@ -195,6 +198,7 @@ function globalredirect_init() {
     }
   }
 
+
   // Find an alias (if any) for the request
   $langcode = isset($options['language']->language) ? $options['language']->language : '';
   $alias = drupal_get_path_alias($current_path, $langcode);
@@ -335,9 +339,12 @@ function _globalredirect_is_active($settings) {
    * @see http://drupal.org/node/205810
    * @see http://drupal.org/node/278615
    */
+
+  /* not required in Pantheon
   if ($_SERVER['SCRIPT_NAME'] != $GLOBALS['base_path'] . 'index.php') {
     return FALSE;
   }
+  */
 
   /**
    * If this is a command line request (Drush, etc), skip processing.
