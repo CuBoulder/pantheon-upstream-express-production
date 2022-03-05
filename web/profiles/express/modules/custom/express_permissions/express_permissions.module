@@ -247,7 +247,6 @@ function express_permissions_secure_permissions($role) {
       'view any unpublished content',
       'view bean page',
       'view bean revisions',
-      'view express environment indicator',
       'view own unpublished content',
       'view revisions',
       'view the administration theme',
@@ -477,7 +476,6 @@ function express_permissions_secure_permissions($role) {
       'view any unpublished content',
       'view bean page',
       'view bean revisions',
-      'view express environment indicator',
       'view own unpublished content',
       'view revisions',
       'view the administration theme',
@@ -603,7 +601,6 @@ function express_permissions_secure_permissions($role) {
       'view error messages',
       'diff view changes',
       'view redirects',
-      'view express environment indicator',
       'use add another',
     ),
     'site_owner' => array(
@@ -713,7 +710,6 @@ function express_permissions_secure_permissions($role) {
       'view error messages',
       'diff view changes',
       'view redirects',
-      'view express environment indicator',
       'use add another',
     ),
     'access_manager' => array(
