@@ -2,3 +2,9 @@
 web/sites/*/files
 web/sites/*/private
 
+# Ignore Lando override files
+.lando.local.yml
+
+# Ignore IDE workspace files
+.idea
+.vscode
