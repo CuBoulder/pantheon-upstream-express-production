@@ -1,5 +1,5 @@
 {
-    "name": "tirazel/upstreamtest",
+    "name": "cuboulder/pantheonupstreamexpress",
     "require": {
         "simplesamlphp/simplesamlphp": "^1.19"
     },
