@@ -28,7 +28,6 @@ dependencies[] = express_content_edit_lock
 dependencies[] = r4032login
 dependencies[] = unpublished_404
 dependencies[] = masquerade
-dependencies[] = express_site_metrics
 
 optional-dependencies[] = cu_users
 optional-dependencies[] = express_content_edit_lock
