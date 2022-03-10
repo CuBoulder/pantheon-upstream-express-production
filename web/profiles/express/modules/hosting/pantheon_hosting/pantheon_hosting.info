@@ -11,5 +11,3 @@ dependencies[] = cu_users
 dependencies[] = cu_saml
 dependencies[] = dblog
 dependencies[] = noreqnewpass
-dependencies[] = smtp
-dependencies[] = maillog
