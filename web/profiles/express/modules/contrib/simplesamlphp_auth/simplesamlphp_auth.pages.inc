@@ -65,7 +65,8 @@ function simplesamlphp_auth_loginpage() {
   // Support for deep linking.
   watchdog('simplesamlphp_auth', 'test message');
   watchdog('simplesamlphp_auth', print_r($_REQUEST, true));
-
+  watchdog('simplesamlphp_auth', print_r($_GET, true));
+  watchdog('simplesamlphp_auth', $base_url);
 
   // See if a URL has been explicitly provided in ReturnTo. If so, use it (as
   // long as it points to this site).
