@@ -66,6 +66,8 @@ function simplesamlphp_auth_loginpage() {
   watchdog('simplesamlphp_auth', 'test message');
   watchdog('simplesamlphp_auth', print_r($_REQUEST, true));
   watchdog('simplesamlphp_auth', print_r($_GET, true));
+  watchdog('simplesamlphp_auth', $_REQUEST['destination']);
+  watchdog('simplesamlphp_auth', $base_url . '/' . $_REQUEST['destination']);
   watchdog('simplesamlphp_auth', $base_url);
 
   // See if a URL has been explicitly provided in ReturnTo. If so, use it (as
