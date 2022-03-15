@@ -50,10 +50,21 @@ function cu_saml_user_login(&$edit, $account) {
  * Redirects users to the federated login page at /saml_login.
  */
 function cu_saml_menu_alter(&$items) {
-  $items['user']['page callback'] = 'drupal_goto';
+  $items['user']['page callback'] = 'saml_rewrite_user_path';
   $items['user']['page arguments'] = array('saml_login');
+  $hold = true;
 }
 
+function saml_rewrite_user_path($url) {
+  if (isset($_GET['destination'])) {
+    $param = $_GET['destination'];
+    unset($_GET['destination']);
+    drupal_goto($url, ['query' => ['destination' => $param]]);
+  }
+  else {
+    drupal_goto($url);
+  }
+}
 /**
  * Sets the user display name from saml info.
  */
