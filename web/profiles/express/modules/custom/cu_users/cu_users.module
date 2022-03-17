@@ -767,45 +767,48 @@ function cu_users_override_external_invite_validate(&$form, &$form_state) {
  * Custom submit handler for external invite override.
  */
 function cu_users_override_external_invite_submit(&$form, &$form_state) {
+  $roles_to_add = [];
+  $roles_to_add[] = $form_state['values']['core_rid'];
+  foreach ($form_state['values']['addon_rids'] as $key => $value)
+  {
+    if($form_state['values']['addon_rids'][$key])
+    {
+      $roles_to_add[] = $form_state['values']['addon_rids'][$key];
+    }
+  };
+
   $email_values = strtolower($form_state['values']['email']);
   $emails = preg_split("/[\r\n,\s]+/", $email_values, -1, PREG_SPLIT_NO_EMPTY);
 
   if (!empty($emails)) {
     foreach ($emails as $email) {
-      $output = cu_users_ldap_email_lookup($email);
-      $ldap_mail_return = '';
+      $parts = explode("@", $email);
+      $username = $parts[0];
 
-      // $output can be an array with $output['count'] as the only key.
-      if (isset($output[0])) {
-        $parts = explode("@", $output[0]['cuedupersonemailhome'][0]);
-        $username = $parts[0];
-        $ldap_mail_return = strtolower($output[0]['mail'][0]);
-      }
+      $account = user_load_by_name($username);
+      $new_user = array(
+        'name' => $username,
+        'pass' => $username . strrev($username),
+        'mail' => $email,
+        'timezone' => 'America/Denver',
+        'status' => 1,
+        'init' => $email,
+        'roles' => array(
+          DRUPAL_AUTHENTICATED_RID => 'authenticated user',
+        ),
+      );
 
-      if (!empty($output) && !empty($ldap_mail_return) && $email === $ldap_mail_return) {
-        // Check to see if the user already exists before trying to create them
-        $account = user_load_by_name($username);
-        if (isset($account)) {
-          $new_user = array(
-            'name' => $username,
-            'pass' => $username . strrev($username),
-            'mail' => $email,
-            'timezone' => 'America/Denver',
-            'status' => 1,
-            'init' => $email,
-            'roles' => array(
-              DRUPAL_AUTHENTICATED_RID => 'authenticated user',
-            ),
-          );
-
-          try {
-            // The first parameter is sent blank so a new user is created.
-            user_save('', $new_user);
-            watchdog('cu_users', 'Invite created an account for %user', array('%user' => $username));
-          } catch (Exception $exception) {
-            watchdog('cu_users', $exception->getMessage(), WATCHDOG_ERROR);
-          }
+      try
+      {
+        // The first parameter is sent blank so a new user is created.
+        $user = user_save('', $new_user);
+        foreach($roles_to_add as $rid)
+        {
+          user_multiple_role_edit(array($user->uid), 'add_role', $rid);
         }
+      } catch (Exception $exception)
+      {
+        watchdog('cu_users', 'Error creating account via external user invite.');
       }
     }
   }
