@@ -125,7 +125,7 @@ function express_settings_menu() {
     'access arguments' => array('administer matchredirect'),
     'weight' => 1,
   );
-
+/*
   // DEFINES CACHE SECTION.
   $items['admin/settings/cache'] = array(
     'title' => 'Cache',
@@ -155,6 +155,7 @@ function express_settings_menu() {
     'access arguments' => array('access express settings'),
     'weight' => 0,
   );
+
   $items['admin/settings/cache/clear/varnish-path'] = array(
     'title' => 'Clear Page by Path',
     'description' => 'Clear Page by Path.',
@@ -194,7 +195,7 @@ function express_settings_menu() {
     'access arguments' => array('clear path caches'),
     'weight' => 999,
   );
-
+*/
   // Menu Settings
   $items['admin/settings/menus'] = array(
     'title' => 'Menus',
