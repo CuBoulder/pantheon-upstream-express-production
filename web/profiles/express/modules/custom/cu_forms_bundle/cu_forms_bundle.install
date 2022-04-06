@@ -136,3 +136,10 @@ function cu_forms_bundle_disable() {
 
   variable_set('user_external_invite_addon_roles', $adjustedAddOnRoleIds);
 }
+
+/**
+ * Enable webform_reply_to module.
+ */
+function cu_forms_bundle_update_7010() {
+  module_enable(array('webform_reply_to'));
+}

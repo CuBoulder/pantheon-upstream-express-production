@@ -15,6 +15,7 @@ dependencies[] = recaptcha
 dependencies[] = captcha_webform
 dependencies[] = webform
 dependencies[] = user_external_invite
+dependencies[] = webform_reply_to
 
 bundle_cache_clear = 1
 
