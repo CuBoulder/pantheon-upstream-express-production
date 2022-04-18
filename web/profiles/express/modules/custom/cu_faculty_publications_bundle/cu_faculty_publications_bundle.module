@@ -359,7 +359,7 @@ function get_publication_data($cid, $skipCache, $beanObject) {
 }
 
 /**
- * This is where the request for elastic search is constructed.
+ * This is where the page output is created.
  *
  * @param array $publicationData
  *   Results from either the cache or requesting experts.colorado.edu as returned by get_publication_data().
@@ -394,6 +394,10 @@ function publish_data(array $publicationData) {
       }
 
       $output['publications'][]['#markup'] = theme('pager');
+      drupal_add_js(drupal_get_path(
+        'module', 'cu_faculty_publications_bundle') . '/cu_faculty_publications_bundle.js',
+        ['scope' => 'footer']
+      );
     }
 
     else {
