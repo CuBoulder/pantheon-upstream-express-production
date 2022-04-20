@@ -55,6 +55,30 @@ function cu_saml_menu_alter(&$items) {
   $hold = true;
 }
 
+/**
+ * Implements hook_init().
+ *
+ * Logs people in if they have a valid SAML session.
+ */
+function cu_saml_init() {
+  global $user;
+  if ($user->uid == 0) {
+    _simplesaml_auth_autoload();
+    module_load_include('inc', 'simplesamlphp_auth');
+    _simplesaml_auth_login_register();
+  }
+}
+
+/**
+ * Implements hook_user_logout().
+ *
+ * Removes SAML session cookies when logging out.
+ */
+function cu_saml_user_logout() {
+  setcookie('SimpleSAMLAuthToken', '', 1, '/' . variable_get('cu_path'));
+  setcookie('SimpleSAMLSessionID', '', 1, '/' . variable_get('cu_path'));
+}
+
 function saml_rewrite_user_path($url) {
   if (isset($_GET['destination'])) {
     $param = $_GET['destination'];
