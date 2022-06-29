@@ -1,5 +1,5 @@
 # Ignore paths that contain user-generated content.
-web/sites/*/files
+
 web/sites/*/private
 
 # Ignore Lando override files
