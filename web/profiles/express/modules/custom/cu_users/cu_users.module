@@ -105,7 +105,7 @@ function cu_users_help($path, $arg) {
 <ol class="numbered-list">
   <li>Select a Core Role.</li>
   <li>Consider an optional add-on role for elevated permissions (can be added later via modify site user access).</li>
-  <li>Add the individual user’s email address (i.e., jane.smith@colorado.edu or janesmith@gmail.com). Do not use group or department accounts which are less secure. </li>
+  <li>Add the individual user’s identikey@colorado.edu email</li>
   <li>Provide a custom message to the person (optional).</li>
   <li>Click Send Invites at the bottom of the page.</li>
   </ol>';
