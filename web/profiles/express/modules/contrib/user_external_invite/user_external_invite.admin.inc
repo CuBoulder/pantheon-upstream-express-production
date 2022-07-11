@@ -215,10 +215,11 @@ function user_external_invite_form($form, &$form_state) {
     }
 
     $form['email'] = array(
-      '#title' => t('Email addresses'),
+      '#title' => t('Identikeys'),
       '#type' => 'textarea',
       '#description' => t('Comma separated list of email addresses that are sent the invitation email.'),
       '#required' => TRUE,
+      '#attributes' => array('placeholder' => 'identikey@colorado.edu'),
     );
 
     $form['custom_message'] = array(
