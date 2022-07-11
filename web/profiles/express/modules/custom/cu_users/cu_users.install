@@ -133,27 +133,6 @@ function cu_users_update_7019() {
 }
 
 /**
- * Add Emily as an administrator.
- */
-function cu_users_update_7020() {
-  // If new user does not exist.
-  $new_account = user_load_by_name('mortone');
-  if (!isset($new_account->uid)) {
-    // Create new user.
-    $account = new stdClass();
-    $account->name = 'mortone';
-    $account->mail = 'Emily.Kellagher@Colorado.EDU';
-    $account->status = 1;
-    $account = user_save($account);
-
-    $admin_role = user_role_load_by_name('administrator');
-    $query = db_insert('users_roles')->fields(array('uid', 'rid'));
-    $query->values(array('uid' => $account->uid, 'rid' => $admin_role->rid));
-    $query->execute();
-  }
-}
-
-/**
  * Remove Erin Corson and Matt Tucker as a users
  */
 function cu_users_update_7021() {
@@ -480,6 +459,22 @@ function cu_users_update_7042() {
     $user = user_load_by_name($username);
     if ($user) {
       if (($key = array_search('developer', $user->roles)) !== FALSE) {
+        unset($user->roles[$key]);
+      }
+      user_save($user);
+    }
+  }
+}
+
+/**
+ * Remove roles from Emily
+ */
+function cu_users_update_7043() {
+  $users = array('mortone');
+  foreach ($users as $username) {
+    $user = user_load_by_name($username);
+    if ($user) {
+      foreach ($user->roles as $key => $role) {
         unset($user->roles[$key]);
       }
       user_save($user);
