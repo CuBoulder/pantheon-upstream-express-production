@@ -73,7 +73,7 @@ function express_pardot_bundle_form_options(&$form, &$form_state, $id = NULL, $d
 function _pardot_domain_options() {
   return array(
     'https://lawschool.colorado.edu' => 'https://lawschool.colorado.edu',
-    'https://info.cuonline.edu' => 'https://info.cuonline.edu'
+    'https://info.online.cu.edu' => 'https://info.online.cu.edu'
   );
 }
 
