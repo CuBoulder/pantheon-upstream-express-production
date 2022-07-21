@@ -28,7 +28,6 @@ function cu_users_get_users($type = 'all') {
     'brokaw' => 'Annie.Brokaw@Colorado.EDU',
     'linebarg' => 'joanna.bertrand@Colorado.EDU',
     'wetu1300' => 'wendy.turnbull@Colorado.EDU',
-    'mortone' => 'Emily.Kellagher@Colorado.EDU',
   );
 
   $user_array['site_owner'] = array(
