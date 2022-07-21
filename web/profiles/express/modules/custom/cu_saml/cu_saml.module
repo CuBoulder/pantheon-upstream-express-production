@@ -103,9 +103,5 @@ function _set_user_display_name($account, $values) {
   $edit['field_saml_last_name'][LANGUAGE_NONE][0]['value'] = $values['last_name'];
   $edit['field_saml_primary_affiliation'][LANGUAGE_NONE][0]['value'] = $values['primary_affiliation'][0];
 
-//  $edit['field_ldap_display_name'][LANGUAGE_NONE][0]['value'] = $values['display_name'];
-//  $edit['field_ldap_last_name'][LANGUAGE_NONE][0]['value'] = $values['last_name'];
-//  $edit['field_ldap_primary_affiliation'][LANGUAGE_NONE][0]['value'] = $values['primary_affiliation'][0];
-
   user_save($account, $edit);
 }
