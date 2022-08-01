@@ -20,7 +20,7 @@ $active_configs = $configs[$active_option];
           <div class="cu-search">
             <div class="form-item form-type-textfield form-item-search-keys">
               <label class="element-invisible" for="edit-search-keys">Enter the terms you wish to search for. </label>
-              <input placeholder="<?php print $active_configs['placeholder']; ?>" type="search" id="edit-search-keys" name="cse" value="" size="15" maxlength="128" class="form-text">
+              <input placeholder="<?php print $active_configs['placeholder']; ?>" type="search" id="edit-search-keys" name="cse" value="" size="15" maxlength="1024" class="form-text">
             </div>
             <div class="form-actions form-wrapper" id="edit-actions"><input type="submit" id="edit-submit" name="op" value="Search" class="form-submit"></div>
           </div>

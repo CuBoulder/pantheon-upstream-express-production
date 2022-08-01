@@ -38,7 +38,7 @@ $active_configs = $configs[$active_option];
           <div class="cu-search clearfix">
             <div class="form-item form-type-textfield form-item-search-keys">
               <label class="element-invisible" for="edit-search-keys-mobile">Enter the terms you wish to search for. </label>
-              <input placeholder="<?php print $active_configs['placeholder']; ?>" type="search" id="edit-search-keys-mobile" name="cse" value="" size="15" maxlength="128" class="form-text">
+              <input placeholder="<?php print $active_configs['placeholder']; ?>" type="search" id="edit-search-keys-mobile" name="cse" value="" size="15" maxlength="1024" class="form-text">
             </div>
             <div class="form-actions form-wrapper" id="edit-actions-mobile"><input type="submit" id="edit-submit-mobile" name="op" value="Search" class="form-submit"></div>
           </div>
