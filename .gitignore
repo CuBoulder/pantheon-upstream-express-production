@@ -8,3 +8,4 @@ web/sites/*/private
 # Ignore IDE workspace files
 .idea
 .vscode
+web/.htaccess
