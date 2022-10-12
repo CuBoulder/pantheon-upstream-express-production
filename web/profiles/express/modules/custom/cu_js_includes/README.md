@@ -16,7 +16,7 @@
     - put the include name in the `$types` array found on line 28 of `cu_js_includes.context.inc` instead
 4. Create a form function `cu_js_includes_<yourIncludeName>_form()` in `includes/cu_js_includes.forms.inc`:
     - take the other form functions as guides and make whatever adjustments needed.
-5. Add you include to the `includes/cu_js_includes.permissions.inc` to the `cu_js_includes_secure_permissions()` function:
+5. Add your include to the `includes/cu_js_includes.permissions.inc` to the `cu_js_includes_secure_permissions()` function:
     - Again, follow the pattern established there.
 6. Add your js include to the `$custom_types` array inside `cu_js_includes_get_include_types()` found in the `cu_js_includes.types.inc` file:
     - Look previous includes for guidance
