@@ -28,6 +28,7 @@ class context_reaction_js_include extends context_reaction {
     $types = array(
       'admithub',
       'livechat',
+      'mainstay'
     );
     // Types of filters that use this reaction that are also enabled.
     $filter = array_intersect($enabled_includes, $types);

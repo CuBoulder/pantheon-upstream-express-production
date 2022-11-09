@@ -307,6 +307,9 @@ function cu_forms_bundle_form_webform_component_edit_form_alter(&$form, &$form_s
     'png' => 'png'
   );
   $form['validation']['extensions']['addextensions']['#default_value'] = '';
+
+  $form['extra']['scheme']['#type'] = 'hidden';
+  $form['extra']['directory']['#type'] = 'hidden';
 }
 
 /**

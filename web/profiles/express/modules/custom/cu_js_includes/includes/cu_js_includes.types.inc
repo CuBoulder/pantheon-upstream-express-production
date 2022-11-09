@@ -23,6 +23,14 @@ function cu_js_includes_get_include_types() {
     'template' => 'templates/admithub',
   );
 
+  $custom_types['mainstay'] = array(
+    'label' => 'Mainstay Chatbot',
+    'form_callback' => 'cu_js_includes_mainstay_form',
+    'renderer' => 'page_top_bottom',
+    'path' => $module_path,
+    'template' => 'templates/mainstay',
+  );
+
   $custom_types['livechat'] = array(
     'label' => 'LiveChat',
     'form_callback' => 'cu_js_includes_livechat_form',
@@ -58,6 +66,7 @@ function cu_js_includes_get_include_types() {
 function cu_js_includes_express_node_list_groups($bundles) {
   $bundles['includes']['title'] = 'Include Types';
   $bundles['includes']['types'][] = 'Add AdmitHub Include';
+  $bundles['includes']['types'][] = 'Add Mainstay Chatbot Include';
   $bundles['includes']['types'][] = 'Add LiveChat Include';
   $bundles['includes']['types'][] = 'Add Slate Form Include';
   $bundles['includes']['types'][] = 'Add StatusPage Include';

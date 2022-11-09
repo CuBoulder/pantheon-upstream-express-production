@@ -385,6 +385,9 @@ function cu_js_includes_preprocess_html(&$vars) {
           elseif ($match->type == 'admithub') {
             $vars['page']['page_bottom']['admithub']['#markup'] = $embed_code;
           }
+          elseif ($match->type == 'mainstay') {
+            $vars['page']['page_bottom']['mainstay']['#markup'] = $embed_code;
+          }
         }
       }
     }
