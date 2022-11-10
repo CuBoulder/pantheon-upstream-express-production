@@ -17,7 +17,6 @@ function cu_js_includes_secure_permissions($role) {
     'anonymous user' => array(
       'view js includes',
       'view admithub js includes',
-      'view mainstay js includes',
       'view livechat js includes',
       'view statuspage js includes',
       'view slateform js includes',
@@ -26,7 +25,6 @@ function cu_js_includes_secure_permissions($role) {
     'authenticated user' => array(
       'view js includes',
       'view admithub js includes',
-      'view mainstay js includes',
       'view livechat js includes',
       'view statuspage js includes',
       'view slateform js includes',
