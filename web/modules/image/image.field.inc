@@ -19,7 +19,7 @@ function image_field_info() {
       ),
       'instance_settings' => array(
         'file_extensions' => 'png gif jpg jpeg',
-        'file_directory' => '[date:custom:Y]-[date:custom:m]',
+        'file_directory' => '',
         'max_filesize' => '',
         'alt_field' => 0,
         'title_field' => 0,
