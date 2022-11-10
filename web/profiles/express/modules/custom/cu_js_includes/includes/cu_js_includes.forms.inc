@@ -96,3 +96,32 @@ function cu_js_includes_slateform_form(&$form, &$form_state, $id = NULL, $data =
     '#size' => 128,
   );
 }
+
+/**
+ * Form values for mainstay form embed.
+ *
+ * @param array $form
+ *   Form containing default embed template form options.
+ * @param array $form_state
+ *   State of the default embed template form.
+ * @param int|null $id
+ *   ID of the current embed being edited if that embed exists.
+ * @param array $data
+ *   Data of the current embed if it is being edited.
+ */
+function cu_js_includes_mainstay_form(&$form, &$form_state, $id = NULL, $data = array()) {
+  $form['options']['account_id'] = array(
+    '#title' => t('License ID'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['account_id']) ? $data['account_id'] : '',
+    '#required' => TRUE,
+    '#size' => 128,
+  );
+  $form['options']['college_id'] = array(
+    '#title' => t('College ID'),
+    '#type' => 'textfield',
+    '#default_value' => !empty($data['college_id']) ? $data['CuBoulder'] : 'CuBoulder',
+    '#required' => TRUE,
+    '#size' => 128,
+  );
+}
