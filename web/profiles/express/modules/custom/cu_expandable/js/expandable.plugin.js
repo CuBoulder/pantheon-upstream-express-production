@@ -95,11 +95,11 @@
         $('.expandable-accordion-heading a', $tabs).removeClass('is-active').attr({'aria-expanded':'false'});
         $('.expandable-tabcontent', $tabs).slideUp().attr({'aria-hidden':'true'});
         if($($panel).is(':visible')) {
-          $($panel).slideUp().attr({'aria-hidden':'false'});
+          $($panel).slideUp().attr({'aria-hidden':'true'});
           $tab.attr({'aria-expanded':'false'}).removeClass('is-active');
         }
         else {
-          $($panel).slideDown().attr({'aria-hidden':'true'});
+          $($panel).slideDown().attr({'aria-hidden':'false'});
           $tab.attr({'aria-expanded':'true'}).addClass('is-active');
           expandableHashUpdate($panel);
           var $accordionID = '#' + $tab.attr('id');
@@ -166,9 +166,10 @@
           $('.expandable-tablist li a', $tabs).attr({
             'aria-selected': 'false',
           });
+          $('.expandable-tabcontent', $tabs).hide().attr({'aria-hidden':'true'});
           $('.expandable-accordion-heading a', $tabs).removeClass('is-active').attr({'aria-expanded':'false'});
           // show panel
-          $($hash, $tabs).show().attr({'aria-expanded':'true'});
+          $($hash, $tabs).show().attr({'aria-expanded':'true'}).attr({'aria-hidden':'false'});
           $('.expandable-tablist li a[href="' + $hash + '"]', $tabs).addClass('is-active').attr({
             'aria-selected': 'true',
           }).parent().addClass('is-active');
