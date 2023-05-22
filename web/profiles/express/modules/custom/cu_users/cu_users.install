@@ -481,3 +481,30 @@ function cu_users_update_7043() {
     }
   }
 }
+/**
+ * Add David, Kristin, and Nicole as admins.
+ */
+function cu_users_update_7044() {
+  $users = array(
+    'niwa4700' => 'nicole.waldrip@colorado.edu',
+    'krag4316' => 'kristin.agnes@colorado.edu',
+    'dadu0810' => 'david.depuy@colorado.edu',
+  );
+
+  foreach ($users as $id => $email) {
+    $new_account = user_load_by_name($id);
+    if (!isset($new_account->uid)) {
+      // Create new user.
+      $account = new stdClass();
+      $account->name = $id;
+      $account->mail = $email;
+      $account->status = 1;
+      $account = user_save($account);
+
+      $administrator_role = user_role_load_by_name('administrator');
+      $query = db_insert('users_roles')->fields(array('uid', 'rid'));
+      $query->values(array('uid' => $account->uid, 'rid' => $administrator_role->rid));
+      $query->execute();
+    }
+  }
+}
