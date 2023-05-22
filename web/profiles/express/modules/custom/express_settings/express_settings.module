@@ -28,6 +28,10 @@ function express_settings_permission() {
       'title' => 'Clears Full Caches',
       'description' => 'Gives users access clear varnish by path',
     ),
+    'edit gtm container' => array(
+      'title' => 'Edit GTM Container',
+      'description' => 'GGives access to the GTM container form',
+    ),
   );
 }
 
@@ -96,6 +100,15 @@ function express_settings_menu() {
     'access arguments' => array('administer express settings'),
     'weight' => 25,
   );
+  $items['admin/settings/site-configuration/google-analytics-container'] = array(
+    'title' => 'Google Tag Manager Container',
+    'description' => 'Add your Google Tag Manager Container ID (i.e. GTM-XXXXXXX)',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('express_settings_google_analytics_container_form'),
+    'access arguments' => array('edit gtm container'),
+    'weight' => 25,
+  );
 
   // DEFINES URL MANAGEMENT SECTION.
   $items['admin/settings/url-management'] = array(
@@ -155,7 +168,6 @@ function express_settings_menu() {
     'access arguments' => array('access express settings'),
     'weight' => 0,
   );
-
   $items['admin/settings/cache/clear/varnish-path'] = array(
     'title' => 'Clear Page by Path',
     'description' => 'Clear Page by Path.',
@@ -816,6 +828,8 @@ function express_settings_preprocess_page(&$variables) {
     $variables['site_name'] = '<span class="site-name-two-lines">' . variable_get('site_name_1', NULL) . '<br />' . variable_get('site_name_2', NULL) . '</span>';
     $variables['classes_array'][] = 'two-line-title';
   }
+  
+  
 }
 
 /**
@@ -845,6 +859,28 @@ function express_settings_preprocess_html(&$variables) {
       ),
     );
     drupal_add_html_head($element, 'description');
+  }
+  // Add Google GTM Container IDs
+  // Check if container id value is available
+  // add container JS
+  if ($google_container_id = variable_get('google_container_id', NULL)) {
+    drupal_add_js('<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({"gtm.start":
+new Date().getTime(),event:"gtm.js"});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!="dataLayer"?"&l="+l:"";j.async=true;j.src=
+"https://www.googletagmanager.com/gtm.js?id="+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,"script","dataLayer","' . $google_container_id . '");</script>
+<!-- End Google Tag Manager -->',
+      array('type' => 'inline', 'scope' => 'header', 'weight' => -10)
+    );
+    // Add container iframe if there's no JS
+    $variables['page']['page_top']['gtm_container'] = array(
+    '#markup' => '<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src=https://www.googletagmanager.com/ns.html?id=' . $google_container_id . '
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->',
+    '#weight' => -20,
+  );
   }
 }
 
@@ -949,4 +985,39 @@ function express_settings_requirements($phase) {
   }
 
   return $requirements;
+}
+
+/**
+ * Implements hook_form().
+ *
+ * Adds form for setting a GTM container ID.
+ */
+function express_settings_google_analytics_container_form($form, &$form_state) {
+  $form['container_id_istructions'] = array(
+    '#type' => 'markup',
+    '#markup' => '<strong>Instructions</strong><p>The Google Tag Manager (GTM) Containers are provided by SRC within our overarching account. Go to <a href="https://www.colorado.edu/webcentral/resources/google-tag-manager-containers" target="_blank">Web Central</a> and find the GTM Container ID associated with this site to add to the field below.</p>',
+    '#title' => 'Instructions',
+  );
+  $form['google_container_id'] = array(
+    '#title' => t('Google Tag Manager Container ID'),
+    '#type' => 'textfield',
+    '#default_value' => variable_get('google_container_id', ''),
+    '#description' => t('Enter Google Tag Manager Container ID. Example: GTM-XXXXXXX'),
+  );
+
+  return system_settings_form($form);
+}
+
+function express_settings_secure_permissions($role) {
+  $permissions = array(
+    'administrator' => array(
+      'edit gtm container',
+    ),
+    'developer' => array(
+      'edit gtm container',
+    ),
+  );
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
 }
