@@ -28,6 +28,10 @@ function express_settings_permission() {
       'title' => 'Clears Full Caches',
       'description' => 'Gives users access clear varnish by path',
     ),
+    'edit gtm container' => array(
+      'title' => 'Edit GTM Container',
+      'description' => 'GGives access to the GTM container form',
+    ),
   );
 }
 
@@ -102,7 +106,7 @@ function express_settings_menu() {
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('express_settings_google_analytics_container_form'),
-    'access arguments' => array('administer express settings'),
+    'access arguments' => array('edit gtm container'),
     'weight' => 25,
   );
 
@@ -1002,4 +1006,18 @@ function express_settings_google_analytics_container_form($form, &$form_state) {
   );
 
   return system_settings_form($form);
+}
+
+function express_settings_secure_permissions($role) {
+  $permissions = array(
+    'administrator' => array(
+      'edit gtm container',
+    ),
+    'developer' => array(
+      'edit gtm container',
+    ),
+  );
+  if (isset($permissions[$role])) {
+    return $permissions[$role];
+  }
 }
