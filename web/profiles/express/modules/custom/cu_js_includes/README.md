@@ -9,11 +9,12 @@
     - go to `function cu_js_includes_install()` on L81.
     - inside the `$types` array definition add your javascript include following the pattern of the others found there.
 2. If your js include defines a block to be placed using the block/region layout tools:
-    - add its name to the `$type = array('statuspage', 'slateform');` array definition in `cu_js_includes.module` file, in the `cu_js_includes_block_options()` function.
+    - add its name to the `$types = array('statuspage', 'slateform');` array definition in `cu_js_includes.module` file, in the `cu_js_includes_block_options()` function.
     - You can probably skip step 3.
 3. If your js include defines a block to be placed via a context reaction:
     - You will probably skip step 2.
     - put the include name in the `$types` array found on line 28 of `cu_js_includes.context.inc` instead
+    - add an elseif condition in the `cu_js_includes_preprocess_html` function found in `cu_js_includes.module`. Follow the examples in that code for a guide.
 4. Create a form function `cu_js_includes_<yourIncludeName>_form()` in `includes/cu_js_includes.forms.inc`:
     - take the other form functions as guides and make whatever adjustments needed.
 5. Add your include to the `includes/cu_js_includes.permissions.inc` to the `cu_js_includes_secure_permissions()` function:
