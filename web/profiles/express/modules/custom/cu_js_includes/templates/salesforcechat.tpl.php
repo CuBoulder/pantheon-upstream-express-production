@@ -140,9 +140,6 @@
 				isOfflineSupportEnabled: true
             }
         );
-
-        const status = data.isAgentAvailable ? "online": "offline";
-        console.log(`onSettingsCallCompleted event was fired. Agent availability status is ${status}.`);
     };
 
     if (!window.embedded_svc) {
