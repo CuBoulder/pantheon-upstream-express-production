@@ -125,3 +125,56 @@ function cu_js_includes_mainstay_form(&$form, &$form_state, $id = NULL, $data = 
     '#size' => 128,
   );
 }
+
+/**
+ * Form values for mainstay form embed.
+ *
+ * @param array $form
+ *   Form containing default embed template form options.
+ * @param array $form_state
+ *   State of the default embed template form.
+ * @param int|null $id
+ *   ID of the current embed being edited if that embed exists.
+ * @param array $data
+ *   Data of the current embed if it is being edited.
+ */
+function cu_js_includes_salesforcechat_form(&$form, &$form_state, $id = NULL, $data = array()) {
+
+  $form['options']['enable_auto_open'] = array(
+    '#title' => t('Enable Auto Open'),
+    '#description' => t('Select if you want this chat bot to open automatically. Auto open will only work on desktop browsers.'),
+    '#type' => 'checkbox',
+    '#default_value' => !empty($data['enable_auto_open']) ? $data['enable_auto_open'] : 0
+  );
+  $form['options']['auto_open_time'] = array(
+    '#title' => t('Auto Open Time'),
+    '#description' => t("The number of seconds to wait before opening the chatbot automatically."),
+    '#type' => 'textfield',
+    '#attributes' => array('type' => 'number'),
+    '#default_value' => !empty($data['auto_open_time']) ? $data['auto_open_time'] : 15,
+    '#element_validate' => array('_validate_auto_open_time'),
+    '#states' => array(
+      'disabled' => array(
+        ':input[name="enable_auto_open"]' => array('checked' => FALSE),
+      ),
+      'enabled' => array(
+        ':input[name="enable_auto_open"]' => array('checked', TRUE)
+      )
+    )
+  );
+  $form['options']['enable_eye_catcher'] = array(
+    '#title' => t('Enable Eye Catcher Image'),
+    '#description' => t('Select the checkbox if you want the eye catcher to be displayed.  Eye catcher will only display on desktop browsers.'),
+    '#type' => 'checkbox',
+    '#default_value' => !empty($data['enable_eye_catcher']) ? $data['enable_eye_catcher'] : 0
+  );
+}
+
+/**
+ * Validates the auto open time can be converted to an number.
+ */
+function _validate_auto_open_time($element, $form_state) {
+  if (!is_numeric($element['#value'])) {
+    form_error($element, t('The auto open time should be written as an integer. For example "10".'));
+  }
+}

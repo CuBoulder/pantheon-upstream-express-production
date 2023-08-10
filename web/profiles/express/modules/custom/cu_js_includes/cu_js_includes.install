@@ -84,7 +84,8 @@ function cu_js_includes_install() {
     'livechat' => 'livechat',
     'slateform' => 'slateform',
     'statuspage' => 'statuspage',
-    'mainstay' => 'mainstay'
+    'mainstay' => 'mainstay',
+    'salesforcechat' => 'salesforcechat'
   );
   variable_set('cu_js_includes_enabled', $types);
   // Menu items are already added so we need to rebuild if types are changed.
@@ -110,6 +111,24 @@ function cu_js_includes_update_7002() {
     'slateform' => 'slateform',
     'statuspage' => 'statuspage',
     'mainstay' => 'mainstay'
+  );
+  variable_set('cu_js_includes_enabled', $types);
+  // Menu items are already added so we need to rebuild if types are changed.
+  menu_rebuild();
+}
+
+
+/**
+ * Add Salesforce chat include.
+ */
+function cu_js_includes_update_7003() {
+  $types = array(
+    'admithub' => 'admithub',
+    'livechat' => 'livechat',
+    'slateform' => 'slateform',
+    'statuspage' => 'statuspage',
+    'mainstay' => 'mainstay',
+    'salesforcechat' => 'salesforcechat'
   );
   variable_set('cu_js_includes_enabled', $types);
   // Menu items are already added so we need to rebuild if types are changed.
