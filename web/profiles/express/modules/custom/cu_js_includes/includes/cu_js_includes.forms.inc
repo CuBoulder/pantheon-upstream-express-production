@@ -164,7 +164,7 @@ function cu_js_includes_salesforcechat_form(&$form, &$form_state, $id = NULL, $d
   );
   $form['options']['enable_eye_catcher'] = array(
     '#title' => t('Enable Eye Catcher Image'),
-    '#description' => t('Select the checkbox if you want the eye catcher to be displayed.'),
+    '#description' => t('Select the checkbox if you want the eye catcher to be displayed.  Eye catcher will only display on desktop browsers.'),
     '#type' => 'checkbox',
     '#default_value' => !empty($data['enable_eye_catcher']) ? $data['enable_eye_catcher'] : 0
   );
