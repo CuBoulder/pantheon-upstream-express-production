@@ -12,5 +12,10 @@
           "ln -s ../../../private/config vendor/simplesamlphp/simplesamlphp/config",
           "ln -s ../../../private/cert vendor/simplesamlphp/simplesamlphp/cert"
         ]
+    },
+    "file-mapping": {
+        "web/robots.txt": {
+            "append": "robots-additions.txt"
+        }
     }
 }
