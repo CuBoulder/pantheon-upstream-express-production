@@ -27,7 +27,7 @@
       /* color */
     .embeddedServiceSidebarMinimizedDefaultUI .content{
         background-color: #CFB87C;
-        color: #222;        
+        color: #222;
     }
     .embeddedServiceSidebarMinimizedDefaultUI.helpButton{
         background-color: #CFB87C;
@@ -74,7 +74,7 @@
         color:black;
         font-size:medium;
     }
-    
+
     /* @mediascreen button, input[type="reset"], input[type="submit"], input[type="button"]{
         font-size: 25%;
     } */
@@ -114,7 +114,7 @@
                         closeEyeCatcherAndBootstrap();
                     },
                     autoOpenTime * 1000
-                );   
+                );
             });
         }
 
@@ -131,18 +131,18 @@
         embedded_svc.settings.offlineSupportMinimizedText = 'Questions? Let\'s Chat'; //(Defaults to Contact Us)
         embedded_svc.settings.enabledFeatures = ['LiveAgent'];
         embedded_svc.settings.entryFeature = 'LiveAgent';
-        
+
         embedded_svc.init(
-            'https://cu.my.salesforce.com',
-			'https://cuboulder.secure.force.com/BuffInfo',
+			'https://cu.my.salesforce.com',
+			'https://cu.my.salesforce-sites.com/BuffInfo',
 			gslbBaseURL,
 			'00Do0000000Gz4V',
 			'Buff_Info_Chat_Team',
 			{
-                baseLiveAgentContentURL: 'https://c.la3-c2-ia2.salesforceliveagent.com/content',
+				baseLiveAgentContentURL: 'https://c.la3-c1-ia7.salesforceliveagent.com/content',
 				deploymentId: '5722T0000008OsB',
 				buttonId: '5732T000000Cb3s',
-				baseLiveAgentURL: 'https://d.la3-c2-ia2.salesforceliveagent.com/chat',
+				baseLiveAgentURL: 'https://d.la3-c1-ia7.salesforceliveagent.com/chat',
 				eswLiveAgentDevName: 'EmbeddedServiceLiveAgent_Parent04I2T000000005EUAQ_18603851c77',
 				isOfflineSupportEnabled: true
             }
@@ -187,10 +187,10 @@
         eyeCatcherCloser.style = "position: absolute; display: block; top: -5px; right: -3px; width: 16px; line-height: 16px; text-align: center; cursor: pointer; text-decoration: none; color: rgb(0, 0, 0); font-size: 20px; font-family: Arial, sans-serif; border-radius: 50%; background-color: rgba(255, 255, 255, 0.5);";
         eyeCatcherCloser.addEventListener("click", closeimg);
         eyeCatcherCloser.textContent = "x";
-        
+
         eyeCatcherImgDiv.id = "livechat-eye-catcher-img";
         eyeCatcherImgDiv.style = "display: block; overflow: hidden; cursor: pointer;"
-        
+
         eyeCatcherImg.id = "imagID";
         eyeCatcherImg.alt = "Chat now";
         eyeCatcherImg.addEventListener("click", closeEyeCatcherAndBootstrap);
@@ -200,7 +200,7 @@
         eyeCatcher.appendChild(eyeCatcherCloser);
         eyeCatcherImgDiv.appendChild(eyeCatcherImg);
         eyeCatcher.appendChild(eyeCatcherImgDiv);
-            
+
         const chatScript = document.querySelector("#salesforce-chatbot");
         chatScript.after(eyeCatcher);
     }
