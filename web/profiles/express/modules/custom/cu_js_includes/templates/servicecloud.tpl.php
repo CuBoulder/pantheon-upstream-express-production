@@ -105,26 +105,40 @@
     const autoOpenTime = <?php print check_plain($auto_open_time); ?>;
     const enableEyeCatcher = <?php print check_plain($enable_eye_catcher); ?>;
 
+    // Initialize embedded_svc.
+    if (!window.embedded_svc) {
+        var s = document.createElement('script');
+        s.setAttribute('src', 'https://cu.my.salesforce.com/embeddedservice/5.0/esw.min.js');
+        s.onload = function() {
+            initESW(null);
+        };
+        document.body.appendChild(s);
+    } else {
+        initESW('https://service.force.com');
+        embedded_svc.addEventHandler("onSettingsCallCompleted", function(data) {
+            document.querySelector(".embeddedServiceHelpButton").addEventListener('click', closeEyeCatcher);
+            const status = data.isAgentAvailable ? "online": "offline";
+            console.log(`onSettingsCallCompleted event was fired. Agent availability status is ${status}.`);
+        });
+    }
+
     // Auto Open and Eye Catcher should be enabled only on desktop browsers.
     if(!(/Android|webOS|iPhone|iPad|iPod|mobile.+firefox|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
-        if (enableAutoOpen === 1) {
-            embedded_svc.addEventHandler("onSettingsCallCompleted", function(data) {
-                document.querySelector(".embeddedServiceHelpButton").addEventListener('click', closeEyeCatcher);
+            if (enableAutoOpen === 1) {
                 setTimeout(
                     function() {
                         closeEyeCatcherAndBootstrap();
                     },
                     autoOpenTime * 1000
                 );
-            });
-        }
+            }
 
-        if (enableEyeCatcher === 1) {
-            addEyeCatcherHtml();
-        }
+            if (enableEyeCatcher === 1) {
+                addEyeCatcherHtml();
+            }
     }
 
-    var initESW = function(gslbBaseURL) {
+    function initESW(gslbBaseURL) {
         embedded_svc.settings.displayHelpButton = true; //Or false
         embedded_svc.settings.language = ''; //For example, enter 'en' or 'en-US'
         embedded_svc.settings.defaultMinimizedText = 'Questions? Let\'s Chat'; //(Defaults to Chat with an Expert)
@@ -148,21 +162,7 @@
 				isOfflineSupportEnabled: true
             }
         );
-
-        const status = data.isAgentAvailable ? "online": "offline";
-        console.log(`onSettingsCallCompleted event was fired. Agent availability status is ${status}.`);
     };
-
-    if (!window.embedded_svc) {
-		var s = document.createElement('script');
-		s.setAttribute('src', 'https://cu.my.salesforce.com/embeddedservice/5.0/esw.min.js');
-		s.onload = function() {
-			initESW(null);
-		};
-		document.body.appendChild(s);
-	} else {
-		initESW('https://service.force.com');
-    }
 
     function closeEyeCatcher() {
         const img = document.querySelector("#eye-catcher");
