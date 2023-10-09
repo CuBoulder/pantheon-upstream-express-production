@@ -109,6 +109,7 @@
     if(!(/Android|webOS|iPhone|iPad|iPod|mobile.+firefox|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
         if (enableAutoOpen === 1) {
             embedded_svc.addEventHandler("onSettingsCallCompleted", function(data) {
+                document.querySelector(".embeddedServiceHelpButton").addEventListener('click', closeEyeCatcher);
                 setTimeout(
                     function() {
                         closeEyeCatcherAndBootstrap();
