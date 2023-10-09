@@ -164,7 +164,7 @@
 		initESW('https://service.force.com');
     }
 
-    function closeimg() {
+    function closeEyeCatcher() {
         const img = document.querySelector("#eye-catcher");
         if (img != null) {
             img.style.display = "none";
@@ -172,7 +172,7 @@
     }
 
     function closeEyeCatcherAndBootstrap() {
-        closeimg();
+        closeEyeCatcher();
         embedded_svc.bootstrapEmbeddedService();
     }
 
@@ -186,7 +186,7 @@
         eyeCatcher.style = "position: fixed; visibility: visible; z-index: 2147483639; background: transparent; border: 0px; padding: 10px 10px 0px 0px; float: left; margin-right: -10px; backface-visibility: hidden; bottom: 59px; right: 13px;"
 
         eyeCatcherCloser.style = "position: absolute; display: block; top: -5px; right: -3px; width: 16px; line-height: 16px; text-align: center; cursor: pointer; text-decoration: none; color: rgb(0, 0, 0); font-size: 20px; font-family: Arial, sans-serif; border-radius: 50%; background-color: rgba(255, 255, 255, 0.5);";
-        eyeCatcherCloser.addEventListener("click", closeimg);
+        eyeCatcherCloser.addEventListener("click", closeEyeCatcher);
         eyeCatcherCloser.textContent = "x";
 
         eyeCatcherImgDiv.id = "eye-catcher-img";
