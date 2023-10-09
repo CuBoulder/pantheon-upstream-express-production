@@ -55,12 +55,17 @@ function cu_js_includes_get_include_types() {
     'template' => 'templates/slateform',
   );
 
+  // salesforcechat has been renamed service cloud chat client.
+  // However we need to keep the machine name as salesforcechat
+  // so that previously created includes of that type will continue to work.
+  // We have only changed the name in the UI visible to a user and a couple
+  // of function names to help make of what code is being included.
   $custom_types['salesforcechat'] = array(
-    'label' => 'Salesforce Chatbot',
-    'form_callback' => 'cu_js_includes_salesforcechat_form',
+    'label' => 'Service Cloud Chat Client',
+    'form_callback' => 'cu_js_includes_servicecloud_form',
     'renderer' => 'page_top_bottom',
     'path' => $module_path,
-    'template' => 'templates/salesforcechat',
+    'template' => 'templates/servicecloud',
   );
 
   return $custom_types;

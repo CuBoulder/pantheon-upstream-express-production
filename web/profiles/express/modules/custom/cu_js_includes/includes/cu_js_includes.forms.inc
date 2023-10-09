@@ -127,7 +127,9 @@ function cu_js_includes_mainstay_form(&$form, &$form_state, $id = NULL, $data = 
 }
 
 /**
- * Form values for mainstay form embed.
+ * Form values for servicecloud form embed.
+ *
+ * The salesforcechat client was renamed to servicecloud. We had to keep the salesforcechat machine name, though.
  *
  * @param array $form
  *   Form containing default embed template form options.
@@ -138,17 +140,17 @@ function cu_js_includes_mainstay_form(&$form, &$form_state, $id = NULL, $data = 
  * @param array $data
  *   Data of the current embed if it is being edited.
  */
-function cu_js_includes_salesforcechat_form(&$form, &$form_state, $id = NULL, $data = array()) {
+function cu_js_includes_servicecloud_form(&$form, &$form_state, $id = NULL, $data = array()) {
 
   $form['options']['enable_auto_open'] = array(
     '#title' => t('Enable Auto Open'),
-    '#description' => t('Select if you want this chat bot to open automatically. Auto open will only work on desktop browsers.'),
+    '#description' => t('Select if you want this chat client to open automatically. Auto open will only work on desktop browsers.'),
     '#type' => 'checkbox',
     '#default_value' => !empty($data['enable_auto_open']) ? $data['enable_auto_open'] : 0
   );
   $form['options']['auto_open_time'] = array(
     '#title' => t('Auto Open Time'),
-    '#description' => t("The number of seconds to wait before opening the chatbot automatically."),
+    '#description' => t("The number of seconds to wait before opening the chat client automatically."),
     '#type' => 'textfield',
     '#attributes' => array('type' => 'number'),
     '#default_value' => !empty($data['auto_open_time']) ? $data['auto_open_time'] : 15,
