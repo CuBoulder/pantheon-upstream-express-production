@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Template for Salesforcechat include.
+ * Template for servicecloud include, previously named salesforcechat.
  */
 ?>
 <style type='text/css'>
@@ -100,30 +100,45 @@
 </style>
 
 <script type='text/javascript' src='https://service.force.com/embeddedservice/5.0/esw.min.js'></script>
-<script id="salesforce-chatbot" type='text/javascript'>
+<script id="service-cloud-chat" type='text/javascript'>
     const enableAutoOpen = <?php print check_plain($enable_auto_open); ?>;
     const autoOpenTime = <?php print check_plain($auto_open_time); ?>;
     const enableEyeCatcher = <?php print check_plain($enable_eye_catcher); ?>;
 
+    // Initialize embedded_svc.
+    if (!window.embedded_svc) {
+        var s = document.createElement('script');
+        s.setAttribute('src', 'https://cu.my.salesforce.com/embeddedservice/5.0/esw.min.js');
+        s.onload = function() {
+            initESW(null);
+        };
+        document.body.appendChild(s);
+    } else {
+        initESW('https://service.force.com');
+        embedded_svc.addEventHandler("onSettingsCallCompleted", function(data) {
+            document.querySelector(".embeddedServiceHelpButton").addEventListener('click', closeEyeCatcher);
+            const status = data.isAgentAvailable ? "online": "offline";
+            console.log(`onSettingsCallCompleted event was fired. Agent availability status is ${status}.`);
+        });
+    }
+
     // Auto Open and Eye Catcher should be enabled only on desktop browsers.
     if(!(/Android|webOS|iPhone|iPad|iPod|mobile.+firefox|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
-        if (enableAutoOpen === 1) {
-            embedded_svc.addEventHandler("onSettingsCallCompleted", function(data) {
+            if (enableAutoOpen === 1) {
                 setTimeout(
                     function() {
                         closeEyeCatcherAndBootstrap();
                     },
                     autoOpenTime * 1000
                 );
-            });
-        }
+            }
 
-        if (enableEyeCatcher === 1) {
-            addEyeCatcherHtml();
-        }
+            if (enableEyeCatcher === 1) {
+                addEyeCatcherHtml();
+            }
     }
 
-    var initESW = function(gslbBaseURL) {
+    function initESW(gslbBaseURL) {
         embedded_svc.settings.displayHelpButton = true; //Or false
         embedded_svc.settings.language = ''; //For example, enter 'en' or 'en-US'
         embedded_svc.settings.defaultMinimizedText = 'Questions? Let\'s Chat'; //(Defaults to Chat with an Expert)
@@ -147,31 +162,17 @@
 				isOfflineSupportEnabled: true
             }
         );
-
-        const status = data.isAgentAvailable ? "online": "offline";
-        console.log(`onSettingsCallCompleted event was fired. Agent availability status is ${status}.`);
     };
 
-    if (!window.embedded_svc) {
-		var s = document.createElement('script');
-		s.setAttribute('src', 'https://cu.my.salesforce.com/embeddedservice/5.0/esw.min.js');
-		s.onload = function() {
-			initESW(null);
-		};
-		document.body.appendChild(s);
-	} else {
-		initESW('https://service.force.com');
-    }
-
-    function closeimg() {
-        const img = document.querySelector("#livechat-eye-catcher");
+    function closeEyeCatcher() {
+        const img = document.querySelector("#eye-catcher");
         if (img != null) {
             img.style.display = "none";
         }
     }
 
     function closeEyeCatcherAndBootstrap() {
-        closeimg();
+        closeEyeCatcher();
         embedded_svc.bootstrapEmbeddedService();
     }
 
@@ -181,14 +182,14 @@
         const eyeCatcherImgDiv = document.createElement("div");
         const eyeCatcherImg = document.createElement("img");
 
-        eyeCatcher.id = "livechat-eye-catcher";
+        eyeCatcher.id = "eye-catcher";
         eyeCatcher.style = "position: fixed; visibility: visible; z-index: 2147483639; background: transparent; border: 0px; padding: 10px 10px 0px 0px; float: left; margin-right: -10px; backface-visibility: hidden; bottom: 59px; right: 13px;"
 
         eyeCatcherCloser.style = "position: absolute; display: block; top: -5px; right: -3px; width: 16px; line-height: 16px; text-align: center; cursor: pointer; text-decoration: none; color: rgb(0, 0, 0); font-size: 20px; font-family: Arial, sans-serif; border-radius: 50%; background-color: rgba(255, 255, 255, 0.5);";
-        eyeCatcherCloser.addEventListener("click", closeimg);
+        eyeCatcherCloser.addEventListener("click", closeEyeCatcher);
         eyeCatcherCloser.textContent = "x";
 
-        eyeCatcherImgDiv.id = "livechat-eye-catcher-img";
+        eyeCatcherImgDiv.id = "eye-catcher-img";
         eyeCatcherImgDiv.style = "display: block; overflow: hidden; cursor: pointer;"
 
         eyeCatcherImg.id = "imagID";
@@ -201,7 +202,7 @@
         eyeCatcherImgDiv.appendChild(eyeCatcherImg);
         eyeCatcher.appendChild(eyeCatcherImgDiv);
 
-        const chatScript = document.querySelector("#salesforce-chatbot");
+        const chatScript = document.querySelector("#service-cloud-chat");
         chatScript.after(eyeCatcher);
     }
 </script>
