@@ -83,6 +83,7 @@ function cu_js_includes_express_node_list_groups($bundles) {
   $bundles['includes']['types'][] = 'Add LiveChat Include';
   $bundles['includes']['types'][] = 'Add Slate Form Include';
   $bundles['includes']['types'][] = 'Add StatusPage Include';
-  $bundles['includes']['types'][] = 'Add Salesforce Chatbot Include';
+  $bundles['includes']['types'][] = 'Add Service Cloud Chat Client Include';
+  // $bundles['includes']['types'][] = 'Add Salesforce Chatbot Include';
   return $bundles;
 }
