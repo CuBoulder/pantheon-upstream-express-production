@@ -146,7 +146,12 @@
         embedded_svc.settings.offlineSupportMinimizedText = 'Questions? Let\'s Chat'; //(Defaults to Contact Us)
         embedded_svc.settings.enabledFeatures = ['LiveAgent'];
         embedded_svc.settings.entryFeature = 'LiveAgent';
-
+        embedded_svc.settings.extraPrechatFormDetails = [{
+            "label":"Current Site",
+            "value":location.href,
+            "transcriptFields":[ "Current_Site__c" ],
+            "displayToAgent":true
+        }];
         embedded_svc.init(
 			'https://cu.my.salesforce.com',
 			'https://cu.my.salesforce-sites.com/BuffInfo',
